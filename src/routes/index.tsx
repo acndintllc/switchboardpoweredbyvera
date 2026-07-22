@@ -135,6 +135,9 @@ function Index() {
   const [brain, setBrain] = useState<Brain>("claude");
   const [personaSlug, setPersonaSlug] = useState<string>("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  // Per-pair conversation memory. Key = `${brain}::${personaSlug}`.
+  const conversationsRef = useRef<Record<string, ChatMsg[]>>({});
+  const currentKeyRef = useRef<string>("");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -258,6 +261,25 @@ function Index() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+
+  // Persist and restore conversation history per (brain, persona) pair so
+  // switching dropdowns preserves each thread independently.
+  useEffect(() => {
+    if (!personaSlug) return;
+    const nextKey = `${brain}::${personaSlug}`;
+    const prevKey = currentKeyRef.current;
+    if (prevKey === nextKey) return;
+    if (prevKey) conversationsRef.current[prevKey] = messages;
+    currentKeyRef.current = nextKey;
+    setMessages(conversationsRef.current[nextKey] ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brain, personaSlug]);
+
+  // Keep the live map in sync as messages update for the current pair.
+  useEffect(() => {
+    const key = currentKeyRef.current;
+    if (key) conversationsRef.current[key] = messages;
   }, [messages]);
 
   // Latest assistant output drives the Artifact Canvas (right panel).
@@ -444,24 +466,44 @@ function Index() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       {/* Top Control Bar */}
       <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h1 className="m-0 leading-none">
               <img
                 src={headerLogoAsset.url}
                 alt={`Switchboard, ${t.poweredBy}`}
-                className="h-14 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
+                className="h-10 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)] sm:h-14"
               />
               <span className="sr-only">Switchboard, {t.poweredBy}</span>
             </h1>
+            {/* Compact controls that sit next to the logo on mobile */}
+            <div className="flex items-center gap-2 sm:hidden">
+              <button
+                type="button"
+                aria-label={t.languageAria}
+                onClick={() => setLanguage((l) => (l === "en" ? "es" : "en"))}
+                className="font-display h-9 rounded-md border border-sky-500/60 bg-sky-950/60 px-2 text-[10px] font-semibold tracking-[0.2em] uppercase text-sky-300"
+              >
+                {language === "en" ? "EN" : "ES"}
+              </button>
+              {session && (
+                <button
+                  type="button"
+                  onClick={() => void supabase.auth.signOut()}
+                  className="font-display h-9 rounded-md border border-sky-500/60 bg-sky-950/60 px-2 text-[10px] font-semibold uppercase tracking-wider text-sky-200"
+                >
+                  {language === "es" ? "Salir" : "Out"}
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <button
               type="button"
               aria-label={t.languageAria}
               onClick={() => setLanguage((l) => (l === "en" ? "es" : "en"))}
-              className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold tracking-[0.2em] uppercase text-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.35)] outline-none focus:ring-2 focus:ring-sky-400"
+              className="font-display hidden h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold tracking-[0.2em] uppercase text-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.35)] outline-none focus:ring-2 focus:ring-sky-400 sm:inline-flex"
             >
               [ <span className={language === "en" ? "text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "text-sky-300/40"}>EN</span>
               {" / "}
@@ -472,12 +514,12 @@ function Index() {
                 type="button"
                 onClick={() => void supabase.auth.signOut()}
                 title={session.email ?? ""}
-                className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold uppercase tracking-wider text-sky-200 hover:bg-sky-900/70"
+                className="font-display hidden h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold uppercase tracking-wider text-sky-200 hover:bg-sky-900/70 sm:inline-flex"
               >
                 {language === "es" ? "Salir" : "Sign out"}
               </button>
             )}
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-1 flex-col sm:flex-none">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 {t.activeBrain}
               </label>
@@ -485,7 +527,7 @@ function Index() {
                 aria-label="Active Brain"
                 value={brain}
                 onChange={(e) => setBrain(e.target.value as Brain)}
-                className="font-display h-14 min-w-[180px] rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-sm font-semibold tracking-wide uppercase text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400"
+                className="font-display h-12 w-full rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-sm font-semibold tracking-wide uppercase text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 sm:h-14 sm:min-w-[180px]"
               >
                 {BRAINS.map((b) => (
                   <option key={b.value} value={b.value} className="bg-sky-950 text-sky-100">
@@ -495,7 +537,7 @@ function Index() {
               </select>
             </div>
 
-            <div className="flex flex-col" ref={personaBoxRef}>
+            <div className="flex min-w-0 flex-1 flex-col sm:flex-none" ref={personaBoxRef}>
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 {t.activePersona}
               </label>
@@ -505,19 +547,19 @@ function Index() {
                   aria-label={t.activePersona}
                   onClick={() => setPersonaOpen((v) => !v)}
                   disabled={personas.length === 0}
-                  className="flex h-14 min-w-[280px] flex-col items-start justify-center rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1 text-left text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
+                  className="flex h-12 w-full flex-col items-start justify-center rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1 text-left text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50 sm:h-14 sm:min-w-[280px]"
                 >
                   <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
                     {displayLabel(activePersona) || activePersona?.agent_name || activePersona?.name || (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
-                  <span className="mt-0.5 text-[11px] text-sky-200/70 leading-tight truncate max-w-[260px]">
+                  <span className="mt-0.5 block w-full truncate text-[11px] leading-tight text-sky-200/70 sm:max-w-[260px]">
                     {describe(activePersona) || " "}
                   </span>
                 </button>
                 {personaOpen && personas.length > 0 && (
                   <ul
                     role="listbox"
-                    className="absolute right-0 z-30 mt-1 max-h-96 w-[360px] overflow-y-auto rounded-md border border-sky-500/50 bg-sky-950/95 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.35)] backdrop-blur"
+                    className="absolute left-0 right-0 z-30 mt-1 max-h-96 overflow-y-auto rounded-md border border-sky-500/50 bg-sky-950/95 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.35)] backdrop-blur sm:left-auto sm:w-[360px]"
                   >
                     {personas.map((p, idx) => {
                       const selected = p.slug === personaSlug;
