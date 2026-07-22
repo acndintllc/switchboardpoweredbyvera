@@ -238,7 +238,7 @@ function Index() {
     let mounted = true;
     supabase
       .from("agent_personas_public" as never)
-      .select("slug,name,agent_name,description,description_es")
+      .select("slug,name,agent_name,description,description_es,category,display_label,display_label_es")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
         if (!mounted) return;
