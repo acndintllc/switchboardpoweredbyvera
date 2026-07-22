@@ -331,7 +331,7 @@ function Index() {
             <img
               src={headerLogoAsset.url}
               alt="Switchboard powered by VERA"
-              className="h-14 w-auto object-contain"
+              className="h-14 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
             />
             <h1 className="sr-only">Switchboard, {t.poweredBy}</h1>
           </div>
@@ -341,11 +341,11 @@ function Index() {
               type="button"
               aria-label={t.languageAria}
               onClick={() => setLanguage((l) => (l === "en" ? "es" : "en"))}
-              className="font-display h-14 rounded-md border border-input bg-card px-3 text-xs font-semibold tracking-[0.2em] uppercase shadow-sm outline-none focus:ring-2 focus:ring-ring"
+              className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold tracking-[0.2em] uppercase text-sky-300 shadow-[0_0_18px_rgba(56,189,248,0.35)] outline-none focus:ring-2 focus:ring-sky-400"
             >
-              [ <span className={language === "en" ? "text-foreground" : "text-muted-foreground"}>EN</span>
+              [ <span className={language === "en" ? "text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "text-sky-300/40"}>EN</span>
               {" / "}
-              <span className={language === "es" ? "text-foreground" : "text-muted-foreground"}>ES</span> ]
+              <span className={language === "es" ? "text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "text-sky-300/40"}>ES</span> ]
             </button>
             <div className="flex flex-col">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -355,10 +355,10 @@ function Index() {
                 aria-label="Active Brain"
                 value={brain}
                 onChange={(e) => setBrain(e.target.value as Brain)}
-                className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1.5 text-sm font-semibold tracking-wide uppercase text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400"
+                className="font-display h-14 min-w-[180px] rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-sm font-semibold tracking-wide uppercase text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400"
               >
                 {BRAINS.map((b) => (
-                  <option key={b.value} value={b.value}>
+                  <option key={b.value} value={b.value} className="bg-sky-950 text-sky-100">
                     {b.label}
                   </option>
                 ))}
@@ -438,10 +438,10 @@ function Index() {
         >
           {messages.length === 0 && (
             <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-              <p className="font-medium text-foreground">
+              <p className="font-display font-semibold uppercase tracking-wide text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 {activeBrainLabel} × {activePersona?.agent_name ?? activePersona?.name ?? "…"}
               </p>
-              <p className="mt-1">{t.emptyBody}</p>
+              <p className="mt-1 text-white">{t.emptyBody}</p>
             </div>
           )}
           {messages.map((m, i) => (
