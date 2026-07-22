@@ -424,6 +424,16 @@ function Index() {
               {" / "}
               <span className={language === "es" ? "text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "text-sky-300/40"}>ES</span> ]
             </button>
+            {session && (
+              <button
+                type="button"
+                onClick={() => void supabase.auth.signOut()}
+                title={session.email ?? ""}
+                className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold uppercase tracking-wider text-sky-200 hover:bg-sky-900/70"
+              >
+                {language === "es" ? "Salir" : "Sign out"}
+              </button>
+            )}
             <div className="flex flex-col">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 {t.activeBrain}
