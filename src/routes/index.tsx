@@ -86,6 +86,9 @@ interface Persona {
   agent_name: string | null;
   description: string;
   description_es: string | null;
+  category: string;
+  display_label: string;
+  display_label_es: string | null;
 }
 
 interface ChatMsg {
@@ -235,7 +238,7 @@ function Index() {
     let mounted = true;
     supabase
       .from("agent_personas_public" as never)
-      .select("slug,name,agent_name,description,description_es")
+      .select("slug,name,agent_name,description,description_es,category,display_label,display_label_es")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
         if (!mounted) return;
@@ -280,6 +283,17 @@ function Index() {
 
   const describe = (p: Persona | undefined) =>
     !p ? "" : (language === "es" ? (p.description_es?.trim() || p.description) : p.description);
+
+  const displayLabel = (p: Persona | undefined) =>
+    !p ? "" : (language === "es" ? (p.display_label_es?.trim() || p.display_label) : p.display_label);
+
+  const categoryLabel = (cat: string) => {
+    if (language === "es") {
+      if (cat === "Writing assets") return "Recursos de escritura";
+      if (cat === "Business assets") return "Recursos de negocios";
+    }
+    return cat;
+  };
 
   async function handleSend() {
     const text = input.trim();
@@ -494,7 +508,7 @@ function Index() {
                   className="flex h-14 min-w-[280px] flex-col items-start justify-center rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1 text-left text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
                 >
                   <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                    {activePersona?.agent_name ?? activePersona?.name ?? (personas.length === 0 ? t.loading : t.selectPersona)}
+                    {displayLabel(activePersona) || activePersona?.agent_name || activePersona?.name || (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
                   <span className="mt-0.5 text-[11px] text-sky-200/70 leading-tight truncate max-w-[260px]">
                     {describe(activePersona) || " "}
@@ -505,10 +519,16 @@ function Index() {
                     role="listbox"
                     className="absolute right-0 z-30 mt-1 max-h-96 w-[360px] overflow-y-auto rounded-md border border-sky-500/50 bg-sky-950/95 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.35)] backdrop-blur"
                   >
-                    {personas.map((p) => {
+                    {personas.map((p, idx) => {
                       const selected = p.slug === personaSlug;
+                      const showHeader = idx === 0 || p.category !== personas[idx - 1].category;
                       return (
                         <li key={p.slug}>
+                          {showHeader && (
+                            <div className="sticky top-0 z-10 border-b border-sky-500/30 bg-sky-900/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-300 backdrop-blur">
+                              {categoryLabel(p.category)}
+                            </div>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -520,7 +540,7 @@ function Index() {
                             }`}
                           >
                             <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                              {p.agent_name ?? p.name}
+                              {displayLabel(p) || p.agent_name || p.name}
                             </span>
                             <span className="text-[11px] text-sky-200/70 leading-snug">
                               {describe(p)}
