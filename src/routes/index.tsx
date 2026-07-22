@@ -284,6 +284,17 @@ function Index() {
   const describe = (p: Persona | undefined) =>
     !p ? "" : (language === "es" ? (p.description_es?.trim() || p.description) : p.description);
 
+  const displayLabel = (p: Persona | undefined) =>
+    !p ? "" : (language === "es" ? (p.display_label_es?.trim() || p.display_label) : p.display_label);
+
+  const categoryLabel = (cat: string) => {
+    if (language === "es") {
+      if (cat === "Writing assets") return "Recursos de escritura";
+      if (cat === "Business assets") return "Recursos de negocios";
+    }
+    return cat;
+  };
+
   async function handleSend() {
     const text = input.trim();
     if ((!text && attachments.length === 0) || busy) return;
