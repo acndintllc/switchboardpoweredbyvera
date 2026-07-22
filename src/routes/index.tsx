@@ -264,10 +264,10 @@ function Index() {
       <main
         className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col px-4"
       >
-        {/* Embedded background brand mark */}
+        {/* Embedded background brand mark — full-width, no opacity */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain opacity-[0.22]"
+          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-cover"
           style={{ backgroundImage: `url(${logoAsset.url})` }}
         />
         <div
@@ -292,11 +292,7 @@ function Index() {
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}
+                className="max-w-[80%] rounded-2xl bg-black/75 px-4 py-2.5 text-sm font-medium text-white whitespace-pre-wrap shadow-[0_0_22px_rgba(255,255,255,0.18)] ring-1 ring-white/10"
               >
                 {m.imageUrl ? (
                   <img
