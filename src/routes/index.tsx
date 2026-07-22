@@ -86,6 +86,9 @@ interface Persona {
   agent_name: string | null;
   description: string;
   description_es: string | null;
+  category: string;
+  display_label: string;
+  display_label_es: string | null;
 }
 
 interface ChatMsg {
