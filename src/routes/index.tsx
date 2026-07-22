@@ -143,6 +143,7 @@ function Index() {
   const [authPassword, setAuthPassword] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [language, setLanguage] = useState<Lang>(() => {
     if (typeof navigator === "undefined") return "en";
     return (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -195,6 +196,34 @@ function Index() {
         });
         if (error) throw error;
       }
+    } catch (e) {
+      setAuthNotice((e as Error).message);
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!authEmail) {
+      setAuthNotice(
+        language === "es"
+          ? "Escribe tu correo y luego pulsa recuperar contraseña."
+          : "Enter your email, then click reset password.",
+      );
+      return;
+    }
+    setAuthBusy(true);
+    setAuthNotice(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(authEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setAuthNotice(
+        language === "es"
+          ? "Te enviamos un enlace para restablecer la contraseña."
+          : "We sent you a password reset link.",
+      );
     } catch (e) {
       setAuthNotice((e as Error).message);
     } finally {
