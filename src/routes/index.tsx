@@ -7,17 +7,19 @@ import headerLogoAsset from "@/assets/switchboard-header.png.asset.json";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Switchboard — Powered by VERA" },
+      { title: "Switchboard — AI Workstation Powered by VERA" },
       {
         name: "description",
         content:
           "Multi personality. Multi intelligence. One workstation. Pair any model with any agent persona.",
       },
-      { property: "og:title", content: "Switchboard — Powered by VERA" },
+      { property: "og:title", content: "Switchboard — AI Workstation Powered by VERA" },
       {
         property: "og:description",
         content: "Multi personality. Multi intelligence. One workstation.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
