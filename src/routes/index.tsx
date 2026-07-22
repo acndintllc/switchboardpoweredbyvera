@@ -83,6 +83,7 @@ interface Persona {
   name: string;
   agent_name: string | null;
   description: string;
+  description_es: string | null;
 }
 
 interface ChatMsg {
@@ -133,7 +134,7 @@ function Index() {
     let mounted = true;
     supabase
       .from("agent_personas")
-      .select("slug,name,agent_name,description")
+      .select("slug,name,agent_name,description,description_es")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
         if (!mounted) return;
