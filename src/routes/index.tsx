@@ -332,7 +332,7 @@ function Index() {
                     {activePersona?.agent_name ?? activePersona?.name ?? (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
                   <span className="mt-0.5 text-[11px] text-sky-200/70 leading-tight truncate max-w-[260px]">
-                    {activePersona?.description ?? " "}
+                    {describe(activePersona) || " "}
                   </span>
                 </button>
                 {personaOpen && personas.length > 0 && (
@@ -358,7 +358,7 @@ function Index() {
                               {p.agent_name ?? p.name}
                             </span>
                             <span className="text-[11px] text-sky-200/70 leading-snug">
-                              {p.description}
+                              {describe(p)}
                             </span>
                           </button>
                         </li>
