@@ -241,8 +241,13 @@ async function generateImage(opts: {
   system: string;
   userPrompt: string;
 }): Promise<Response> {
-  // Prepend compiled persona instructions as a visual modifier prefix.
-  const combined = `${opts.system}\n\n---\nUser request: ${opts.userPrompt}`.slice(0, 3900);
+  // gpt-image-1 has no internal prompt expansion, so act as the polisher:
+  // inject a high-contrast visual descriptor prefix, fold in the compiled
+  // persona constraints, then append the user's raw prompt text.
+  const polisherPrefix =
+    "A professional, high-fidelity graphic asset, masterfully rendered with razor-sharp focus, dynamic atmospheric lighting, and clean geometric structures. Intended for commercial publishing. Style: ";
+  const combined =
+    `${polisherPrefix}${opts.system}. Prompt Detail: ${opts.userPrompt}`.slice(0, 3900);
   const resp = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -253,7 +258,8 @@ async function generateImage(opts: {
       model: "gpt-image-1",
       prompt: combined,
       n: 1,
-      size: "1024x1024",
+      size: "1024x1536",
+      quality: "high",
     }),
   });
   const json = await resp.json().catch(() => ({}));
