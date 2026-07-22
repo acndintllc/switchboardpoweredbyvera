@@ -7,17 +7,19 @@ import headerLogoAsset from "@/assets/switchboard-header.png.asset.json";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Switchboard — Powered by VERA" },
+      { title: "Switchboard — AI Workstation Powered by VERA" },
       {
         name: "description",
         content:
           "Multi personality. Multi intelligence. One workstation. Pair any model with any agent persona.",
       },
-      { property: "og:title", content: "Switchboard — Powered by VERA" },
+      { property: "og:title", content: "Switchboard — AI Workstation Powered by VERA" },
       {
         property: "og:description",
         content: "Multi personality. Multi intelligence. One workstation.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -341,12 +343,14 @@ function Index() {
       <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center">
-            <img
-              src={headerLogoAsset.url}
-              alt="Switchboard powered by VERA"
-              className="h-14 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
-            />
-            <h1 className="sr-only">Switchboard, {t.poweredBy}</h1>
+            <h1 className="m-0 leading-none">
+              <img
+                src={headerLogoAsset.url}
+                alt={`Switchboard, ${t.poweredBy}`}
+                className="h-14 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)]"
+              />
+              <span className="sr-only">Switchboard, {t.poweredBy}</span>
+            </h1>
           </div>
 
           <div className="flex items-end gap-2">
@@ -468,7 +472,11 @@ function Index() {
                 {m.imageUrl ? (
                   <img
                     src={m.imageUrl}
-                    alt="Generated"
+                    alt={
+                      m.role === "assistant"
+                        ? `AI generated image: ${messages[i - 1]?.content?.slice(0, 140) ?? "prompt"}`
+                        : "User attached image"
+                    }
                     className="max-w-full rounded-lg"
                   />
                 ) : (

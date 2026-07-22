@@ -77,14 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Switchboard — Powered by VERA" },
+      {
+        name: "description",
+        content:
+          "Switchboard by VERA: pair Claude, ChatGPT, Grok, or DALL·E with any expert persona in one bilingual workstation.",
+      },
+      { name: "author", content: "VERA" },
+      { property: "og:title", content: "Switchboard — Powered by VERA" },
+      {
+        property: "og:description",
+        content:
+          "Multi personality. Multi intelligence. One workstation. Pair any AI model with any expert persona.",
+      },
+      { property: "og:site_name", content: "Switchboard" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
