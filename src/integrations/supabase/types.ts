@@ -16,48 +16,84 @@ export type Database = {
     Tables: {
       agent_personas: {
         Row: {
+          agent_name: string | null
           audit_loop: string
           boundaries: string
           constitution: string
+          constitutional_boundaries_en: string | null
+          constitutional_boundaries_es: string | null
           created_at: string
           description: string
           engagement: string
+          governance_audit_loop_en: string | null
+          governance_audit_loop_es: string | null
           id: string
+          key_identifier: string | null
           name: string
           personality: string
+          personality_anchors_en: string | null
+          personality_anchors_es: string | null
           role: string
+          rules_of_engagement_en: string | null
+          rules_of_engagement_es: string | null
           slug: string
           sort_order: number
+          structural_role_en: string | null
+          structural_role_es: string | null
           updated_at: string
         }
         Insert: {
+          agent_name?: string | null
           audit_loop?: string
           boundaries?: string
           constitution?: string
+          constitutional_boundaries_en?: string | null
+          constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
           engagement?: string
+          governance_audit_loop_en?: string | null
+          governance_audit_loop_es?: string | null
           id?: string
+          key_identifier?: string | null
           name: string
           personality?: string
+          personality_anchors_en?: string | null
+          personality_anchors_es?: string | null
           role?: string
+          rules_of_engagement_en?: string | null
+          rules_of_engagement_es?: string | null
           slug: string
           sort_order?: number
+          structural_role_en?: string | null
+          structural_role_es?: string | null
           updated_at?: string
         }
         Update: {
+          agent_name?: string | null
           audit_loop?: string
           boundaries?: string
           constitution?: string
+          constitutional_boundaries_en?: string | null
+          constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
           engagement?: string
+          governance_audit_loop_en?: string | null
+          governance_audit_loop_es?: string | null
           id?: string
+          key_identifier?: string | null
           name?: string
           personality?: string
+          personality_anchors_en?: string | null
+          personality_anchors_es?: string | null
           role?: string
+          rules_of_engagement_en?: string | null
+          rules_of_engagement_es?: string | null
           slug?: string
           sort_order?: number
+          structural_role_en?: string | null
+          structural_role_es?: string | null
           updated_at?: string
         }
         Relationships: []
