@@ -472,7 +472,11 @@ function Index() {
                 {m.imageUrl ? (
                   <img
                     src={m.imageUrl}
-                    alt="Generated"
+                    alt={
+                      m.role === "assistant"
+                        ? `AI generated image: ${messages[i - 1]?.content?.slice(0, 140) ?? "prompt"}`
+                        : "User attached image"
+                    }
                     className="max-w-full rounded-lg"
                   />
                 ) : (
