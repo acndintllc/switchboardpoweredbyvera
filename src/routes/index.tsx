@@ -138,6 +138,11 @@ function Index() {
   const [personaOpen, setPersonaOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [session, setSession] = useState<{ email: string | null } | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [language, setLanguage] = useState<Lang>(() => {
     if (typeof navigator === "undefined") return "en";
     return (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -154,6 +159,48 @@ function Index() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ? { email: data.session.user.email ?? null } : null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s ? { email: s.user.email ?? null } : null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function handleAuth(mode: "signin" | "signup") {
+    if (!authEmail || !authPassword) return;
+    setAuthBusy(true);
+    setAuthNotice(null);
+    try {
+      if (mode === "signup") {
+        const redirectTo = `${window.location.origin}/`;
+        const { error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+          options: { emailRedirectTo: redirectTo },
+        });
+        if (error) throw error;
+        setAuthNotice(
+          language === "es"
+            ? "Revisa tu correo para confirmar la cuenta, luego inicia sesión."
+            : "Check your email to confirm the account, then sign in.",
+        );
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword,
+        });
+        if (error) throw error;
+      }
+    } catch (e) {
+      setAuthNotice((e as Error).message);
+    } finally {
+      setAuthBusy(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
