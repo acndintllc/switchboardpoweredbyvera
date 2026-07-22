@@ -135,6 +135,9 @@ function Index() {
   const [brain, setBrain] = useState<Brain>("claude");
   const [personaSlug, setPersonaSlug] = useState<string>("");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  // Per-pair conversation memory. Key = `${brain}::${personaSlug}`.
+  const conversationsRef = useRef<Record<string, ChatMsg[]>>({});
+  const currentKeyRef = useRef<string>("");
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -258,6 +261,25 @@ function Index() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+
+  // Persist and restore conversation history per (brain, persona) pair so
+  // switching dropdowns preserves each thread independently.
+  useEffect(() => {
+    if (!personaSlug) return;
+    const nextKey = `${brain}::${personaSlug}`;
+    const prevKey = currentKeyRef.current;
+    if (prevKey === nextKey) return;
+    if (prevKey) conversationsRef.current[prevKey] = messages;
+    currentKeyRef.current = nextKey;
+    setMessages(conversationsRef.current[nextKey] ?? []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brain, personaSlug]);
+
+  // Keep the live map in sync as messages update for the current pair.
+  useEffect(() => {
+    const key = currentKeyRef.current;
+    if (key) conversationsRef.current[key] = messages;
   }, [messages]);
 
   // Latest assistant output drives the Artifact Canvas (right panel).
