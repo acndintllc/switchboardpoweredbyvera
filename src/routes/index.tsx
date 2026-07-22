@@ -104,7 +104,8 @@ const ATTACH_ACCEPT =
   "image/*,.pdf,.txt,.md,.markdown,.csv,.json,.log,.rtf,.doc,.docx";
 
 async function extractDocx(file: File): Promise<string> {
-  const mammoth = await import("mammoth/mammoth.browser");
+  // @ts-expect-error no types shipped for browser bundle
+  const mammoth = await import("mammoth/mammoth.browser.js");
   const buf = await file.arrayBuffer();
   const { value } = await mammoth.extractRawText({ arrayBuffer: buf });
   return value ?? "";
@@ -112,16 +113,14 @@ async function extractDocx(file: File): Promise<string> {
 
 async function extractPdf(file: File): Promise<string> {
   const pdfjs = await import("pdfjs-dist");
-  // Disable worker to avoid asset resolution issues; fine for typical documents.
-  // @ts-expect-error runtime property
-  pdfjs.GlobalWorkerOptions.workerSrc = "";
+  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc = "";
   const buf = await file.arrayBuffer();
-  const doc = await pdfjs.getDocument({ data: buf, useWorker: false } as never).promise;
+  const doc = await pdfjs.getDocument({ data: buf } as never).promise;
   let out = "";
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    out += content.items.map((it: { str?: string }) => it.str ?? "").join(" ") + "\n\n";
+    out += content.items.map((it) => ("str" in it ? it.str : "")).join(" ") + "\n\n";
   }
   return out;
 }
