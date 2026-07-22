@@ -287,7 +287,15 @@ function Index() {
         });
         next.push({ id, name: f.name, kind: "image", dataUrl });
       } else {
-        const txt = await f.text().catch(() => "");
+        const lower = f.name.toLowerCase();
+        let txt = "";
+        try {
+          if (lower.endsWith(".docx")) txt = await extractDocx(f);
+          else if (lower.endsWith(".pdf")) txt = await extractPdf(f);
+          else txt = await f.text();
+        } catch (e) {
+          txt = `[Could not parse ${f.name}: ${(e as Error).message}]`;
+        }
         next.push({ id, name: f.name, kind: "text", text: txt });
       }
     }
