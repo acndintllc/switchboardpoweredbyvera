@@ -219,50 +219,69 @@ function Index() {
     setBusy(true);
 
     try {
-      const resp = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brain,
-          personaSlug,
-          language,
-          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
-        }),
-      });
-
-      const ct = resp.headers.get("content-type") ?? "";
-
-      if (ct.includes("application/json")) {
+      // Image branch (single JSON response)
+      if (brain === "image") {
+        const resp = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brain, personaSlug, language,
+            messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          }),
+        });
         const j = await resp.json();
         if (!resp.ok) throw new Error(j?.error ?? `Error ${resp.status}`);
         setMessages((m) => [
           ...m,
-          {
-            role: "assistant",
-            content: j.imageUrl ? "" : "(no image returned)",
-            imageUrl: j.imageUrl ?? undefined,
-          },
+          { role: "assistant", content: j.imageUrl ? "" : "(no image returned)", imageUrl: j.imageUrl ?? undefined },
         ]);
       } else {
-        if (!resp.ok || !resp.body) {
-          const t = await resp.text();
-          throw new Error(t || `Error ${resp.status}`);
-        }
+        // Streaming branch with [PART_PAUSE] auto-continuation loop.
         setMessages((m) => [...m, { role: "assistant", content: "" }]);
-        const reader = resp.body.getReader();
-        const dec = new TextDecoder();
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          const chunk = dec.decode(value, { stream: true });
-          setMessages((m) => {
-            const copy = m.slice();
-            const last = copy[copy.length - 1];
-            if (last && last.role === "assistant") {
-              copy[copy.length - 1] = { ...last, content: last.content + chunk };
-            }
-            return copy;
+        let convo = nextMessages.slice();
+        let aggregate = "";
+        const MAX_PARTS = 8;
+        for (let part = 0; part < MAX_PARTS; part++) {
+          const resp = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              brain, personaSlug, language,
+              messages: convo.map((m) => ({ role: m.role, content: m.content })),
+            }),
           });
+          if (!resp.ok || !resp.body) {
+            const t = await resp.text();
+            throw new Error(t || `Error ${resp.status}`);
+          }
+          const reader = resp.body.getReader();
+          const dec = new TextDecoder();
+          let partText = "";
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = dec.decode(value, { stream: true });
+            partText += chunk;
+            aggregate += chunk;
+            setMessages((m) => {
+              const copy = m.slice();
+              const last = copy[copy.length - 1];
+              if (last && last.role === "assistant") {
+                copy[copy.length - 1] = { ...last, content: aggregate.replace(/\[PART_PAUSE\]\s*$/i, "") };
+              }
+              return copy;
+            });
+          }
+          if (!/\[PART_PAUSE\]\s*$/i.test(partText.trim())) break;
+          // Strip token from aggregate and prepare a silent continuation turn.
+          aggregate = aggregate.replace(/\[PART_PAUSE\]\s*$/i, "");
+          convo = [
+            ...convo,
+            { role: "assistant", content: partText.replace(/\[PART_PAUSE\]\s*$/i, "") },
+            { role: "user", content: language === "es"
+                ? "Continúa exactamente donde te detuviste sin repetir texto anterior. Cuando termines por completo, no imprimas [PART_PAUSE]."
+                : "Continue exactly where you left off without repeating prior text. When fully complete, do not print [PART_PAUSE]." },
+          ];
         }
       }
     } catch (e) {
