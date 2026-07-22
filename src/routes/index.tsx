@@ -23,6 +23,52 @@ export const Route = createFileRoute("/")({
 });
 
 type Brain = "claude" | "chatgpt" | "grok" | "image";
+type Lang = "en" | "es";
+
+const DICT: Record<Lang, {
+  activeBrain: string;
+  activePersona: string;
+  loading: string;
+  selectPersona: string;
+  send: string;
+  empty: string;
+  emptyBody: string;
+  imagePlaceholder: (persona: string) => string;
+  chatPlaceholder: (brain: string, persona: string) => string;
+  poweredBy: string;
+  languageAria: string;
+}> = {
+  en: {
+    activeBrain: "Active Brain",
+    activePersona: "Active Persona",
+    loading: "Loading…",
+    selectPersona: "Select persona",
+    send: "Send",
+    empty: "Ready when you are.",
+    emptyBody:
+      "Change either dropdown independently. Send a message to route through the current pair.",
+    imagePlaceholder: () =>
+      "Describe an image… (persona pillars become the visual modifier prefix)",
+    chatPlaceholder: (brain, persona) => `Message ${brain} as ${persona}`,
+    poweredBy: "Powered by VERA",
+    languageAria: "Switch language",
+  },
+  es: {
+    activeBrain: "Cerebro activo",
+    activePersona: "Persona activa",
+    loading: "Cargando…",
+    selectPersona: "Elige una persona",
+    send: "Enviar",
+    empty: "Listo cuando tú lo estés.",
+    emptyBody:
+      "Cambia cualquiera de los menús de forma independiente. Envía un mensaje para enrutar a través del par activo.",
+    imagePlaceholder: () =>
+      "Describe una imagen… (los pilares de la persona serán el prefijo visual)",
+    chatPlaceholder: (brain, persona) => `Escribe a ${brain} como ${persona}`,
+    poweredBy: "Impulsado por VERA",
+    languageAria: "Cambiar idioma",
+  },
+};
 
 const BRAINS: { value: Brain; label: string }[] = [
   { value: "claude", label: "Claude" },
@@ -34,6 +80,7 @@ const BRAINS: { value: Brain; label: string }[] = [
 interface Persona {
   slug: string;
   name: string;
+  agent_name: string | null;
   description: string;
 }
 
@@ -52,6 +99,11 @@ function Index() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [personaOpen, setPersonaOpen] = useState(false);
+  const [language, setLanguage] = useState<Lang>(() => {
+    if (typeof navigator === "undefined") return "en";
+    return (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
+  });
+  const t = DICT[language];
   const scrollRef = useRef<HTMLDivElement>(null);
   const personaBoxRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +119,7 @@ function Index() {
     let mounted = true;
     supabase
       .from("agent_personas")
-      .select("slug,name,description")
+      .select("slug,name,agent_name,description")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
         if (!mounted) return;
@@ -102,7 +154,7 @@ function Index() {
     const text = input.trim();
     if (!text || busy) return;
     if (!personaSlug) {
-      setError("Select a persona first.");
+      setError(language === "es" ? "Elige una persona primero." : "Select a persona first.");
       return;
     }
     setError(null);
@@ -118,6 +170,7 @@ function Index() {
         body: JSON.stringify({
           brain,
           personaSlug,
+          language,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
@@ -180,15 +233,25 @@ function Index() {
                 Switchboard
               </h1>
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                Powered by VERA
+                {t.poweredBy}
               </p>
             </div>
           </div>
 
           <div className="flex items-end gap-2">
+            <button
+              type="button"
+              aria-label={t.languageAria}
+              onClick={() => setLanguage((l) => (l === "en" ? "es" : "en"))}
+              className="font-display h-14 rounded-md border border-input bg-card px-3 text-xs font-semibold tracking-[0.2em] uppercase shadow-sm outline-none focus:ring-2 focus:ring-ring"
+            >
+              [ <span className={language === "en" ? "text-foreground" : "text-muted-foreground"}>EN</span>
+              {" / "}
+              <span className={language === "es" ? "text-foreground" : "text-muted-foreground"}>ES</span> ]
+            </button>
             <div className="flex flex-col">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Active Brain
+                {t.activeBrain}
               </label>
               <select
                 aria-label="Active Brain"
@@ -206,18 +269,18 @@ function Index() {
 
             <div className="flex flex-col" ref={personaBoxRef}>
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Active Persona
+                {t.activePersona}
               </label>
               <div className="relative">
                 <button
                   type="button"
-                  aria-label="Active Persona"
+                  aria-label={t.activePersona}
                   onClick={() => setPersonaOpen((v) => !v)}
                   disabled={personas.length === 0}
                   className="flex h-14 min-w-[280px] flex-col items-start justify-center rounded-md border border-input bg-card px-3 py-1 text-left shadow-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                 >
                   <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                    {activePersona?.name ?? (personas.length === 0 ? "Loading…" : "Select persona")}
+                    {activePersona?.agent_name ?? activePersona?.name ?? (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
                   <span className="mt-0.5 text-[11px] text-muted-foreground leading-tight truncate max-w-[260px]">
                     {activePersona?.description ?? " "}
@@ -243,7 +306,7 @@ function Index() {
                             }`}
                           >
                             <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                              {p.name}
+                              {p.agent_name ?? p.name}
                             </span>
                             <span className="text-[11px] text-muted-foreground leading-snug">
                               {p.description}
@@ -278,12 +341,9 @@ function Index() {
           {messages.length === 0 && (
             <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
               <p className="font-medium text-foreground">
-                {activeBrainLabel} × {activePersona?.name ?? "…"}
+                {activeBrainLabel} × {activePersona?.agent_name ?? activePersona?.name ?? "…"}
               </p>
-              <p className="mt-1">
-                Change either dropdown independently. Send a message to route through the current
-                pair.
-              </p>
+              <p className="mt-1">{t.emptyBody}</p>
             </div>
           )}
           {messages.map((m, i) => (
@@ -332,8 +392,8 @@ function Index() {
             }}
             placeholder={
               brain === "image"
-                ? "Describe an image… (persona pillars become the visual modifier prefix)"
-                : `Message ${activeBrainLabel} as ${activePersona?.name ?? "…"}`
+                ? t.imagePlaceholder(activePersona?.agent_name ?? activePersona?.name ?? "")
+                : t.chatPlaceholder(activeBrainLabel, activePersona?.agent_name ?? activePersona?.name ?? "…")
             }
             rows={2}
             className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
@@ -343,7 +403,7 @@ function Index() {
             disabled={busy || !input.trim() || !personaSlug}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity disabled:opacity-50"
           >
-            {busy ? "…" : "Send"}
+            {busy ? "…" : t.send}
           </button>
         </form>
       </main>
