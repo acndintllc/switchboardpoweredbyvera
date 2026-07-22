@@ -24,6 +24,7 @@ export type Database = {
           constitutional_boundaries_es: string | null
           created_at: string
           description: string
+          description_es: string | null
           engagement: string
           governance_audit_loop_en: string | null
           governance_audit_loop_es: string | null
@@ -51,6 +52,7 @@ export type Database = {
           constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
+          description_es?: string | null
           engagement?: string
           governance_audit_loop_en?: string | null
           governance_audit_loop_es?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
+          description_es?: string | null
           engagement?: string
           governance_audit_loop_en?: string | null
           governance_audit_loop_es?: string | null
