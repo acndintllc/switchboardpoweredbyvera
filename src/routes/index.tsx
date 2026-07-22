@@ -519,10 +519,16 @@ function Index() {
                     role="listbox"
                     className="absolute right-0 z-30 mt-1 max-h-96 w-[360px] overflow-y-auto rounded-md border border-sky-500/50 bg-sky-950/95 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.35)] backdrop-blur"
                   >
-                    {personas.map((p) => {
+                    {personas.map((p, idx) => {
                       const selected = p.slug === personaSlug;
+                      const showHeader = idx === 0 || p.category !== personas[idx - 1].category;
                       return (
                         <li key={p.slug}>
+                          {showHeader && (
+                            <div className="sticky top-0 z-10 border-b border-sky-500/30 bg-sky-900/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-300 backdrop-blur">
+                              {categoryLabel(p.category)}
+                            </div>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -534,7 +540,7 @@ function Index() {
                             }`}
                           >
                             <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                              {p.agent_name ?? p.name}
+                              {displayLabel(p) || p.agent_name || p.name}
                             </span>
                             <span className="text-[11px] text-sky-200/70 leading-snug">
                               {describe(p)}
