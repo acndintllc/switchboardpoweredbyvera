@@ -655,6 +655,51 @@ function Index() {
           }}
           className="sticky bottom-0 z-10 flex items-end gap-2 border-t border-border bg-background/85 backdrop-blur py-3"
         >
+          {!session ? (
+            <div className="flex w-full flex-col gap-2 rounded-md border border-sky-500/40 bg-sky-950/60 p-3 text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)]">
+              <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                {language === "es" ? "Inicia sesión para chatear" : "Sign in to chat"}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder={language === "es" ? "Correo" : "Email"}
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
+                />
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder={language === "es" ? "Contraseña" : "Password"}
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
+                />
+                <button
+                  type="button"
+                  disabled={authBusy}
+                  onClick={() => void handleAuth("signin")}
+                  className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-black hover:bg-sky-400 disabled:opacity-50"
+                >
+                  {language === "es" ? "Entrar" : "Sign in"}
+                </button>
+                <button
+                  type="button"
+                  disabled={authBusy}
+                  onClick={() => void handleAuth("signup")}
+                  className="rounded-md border border-sky-400/60 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-900/60 disabled:opacity-50"
+                >
+                  {language === "es" ? "Registrarse" : "Sign up"}
+                </button>
+              </div>
+              {authNotice && (
+                <p className="text-xs text-sky-200/80">{authNotice}</p>
+              )}
+            </div>
+          ) : (
+          <>
           <input
             ref={fileInputRef}
             type="file"
@@ -696,6 +741,8 @@ function Index() {
           >
             {busy ? "…" : t.send}
           </button>
+          </>
+          )}
         </form>
       </main>
     </div>
