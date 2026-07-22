@@ -1,20 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/switchboard-vera.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Switchboard — Brain × Persona Console" },
+      { title: "Switchboard — Powered by VERA" },
       {
         name: "description",
         content:
-          "Independent Brain and Persona dropdowns. Pair any model with any agent persona, then send.",
+          "Multi personality. Multi intelligence. One workstation. Pair any model with any agent persona.",
       },
-      { property: "og:title", content: "Switchboard — Brain × Persona Console" },
+      { property: "og:title", content: "Switchboard — Powered by VERA" },
       {
         property: "og:description",
-        content: "Independent Brain and Persona dropdowns. Pair any model with any agent persona.",
+        content: "Multi personality. Multi intelligence. One workstation.",
       },
     ],
   }),
@@ -50,7 +51,17 @@ function Index() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [personaOpen, setPersonaOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const personaBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (!personaBoxRef.current?.contains(e.target as Node)) setPersonaOpen(false);
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -156,14 +167,25 @@ function Index() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       {/* Top Control Bar */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-            <h1 className="text-sm font-semibold tracking-tight">Switchboard</h1>
+          <div className="flex items-center gap-3">
+            <img
+              src={logoAsset.url}
+              alt="Switchboard powered by VERA"
+              className="h-10 w-10 rounded-md object-cover ring-1 ring-border"
+            />
+            <div className="leading-tight">
+              <h1 className="font-display text-lg font-bold tracking-wide uppercase">
+                Switchboard
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Powered by VERA
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-end gap-2">
             <div className="flex flex-col">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 Active Brain
@@ -172,7 +194,7 @@ function Index() {
                 aria-label="Active Brain"
                 value={brain}
                 onChange={(e) => setBrain(e.target.value as Brain)}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
+                className="font-display h-14 rounded-md border border-input bg-card px-3 py-1.5 text-sm font-semibold tracking-wide uppercase shadow-sm outline-none focus:ring-2 focus:ring-ring"
               >
                 {BRAINS.map((b) => (
                   <option key={b.value} value={b.value}>
@@ -182,24 +204,57 @@ function Index() {
               </select>
             </div>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col" ref={personaBoxRef}>
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 Active Persona
               </label>
-              <select
-                aria-label="Active Persona"
-                value={personaSlug}
-                onChange={(e) => setPersonaSlug(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
-                disabled={personas.length === 0}
-              >
-                {personas.length === 0 && <option value="">Loading…</option>}
-                {personas.map((p) => (
-                  <option key={p.slug} value={p.slug}>
-                    {p.name} — {p.description}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label="Active Persona"
+                  onClick={() => setPersonaOpen((v) => !v)}
+                  disabled={personas.length === 0}
+                  className="flex h-14 min-w-[280px] flex-col items-start justify-center rounded-md border border-input bg-card px-3 py-1 text-left shadow-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
+                    {activePersona?.name ?? (personas.length === 0 ? "Loading…" : "Select persona")}
+                  </span>
+                  <span className="mt-0.5 text-[11px] text-muted-foreground leading-tight truncate max-w-[260px]">
+                    {activePersona?.description ?? " "}
+                  </span>
+                </button>
+                {personaOpen && personas.length > 0 && (
+                  <ul
+                    role="listbox"
+                    className="absolute right-0 z-30 mt-1 max-h-96 w-[360px] overflow-y-auto rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
+                  >
+                    {personas.map((p) => {
+                      const selected = p.slug === personaSlug;
+                      return (
+                        <li key={p.slug}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPersonaSlug(p.slug);
+                              setPersonaOpen(false);
+                            }}
+                            className={`flex w-full flex-col items-start gap-0.5 border-b border-border/60 px-3 py-2 text-left transition-colors hover:bg-accent ${
+                              selected ? "bg-accent" : ""
+                            }`}
+                          >
+                            <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
+                              {p.name}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground leading-snug">
+                              {p.description}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>
