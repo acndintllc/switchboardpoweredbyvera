@@ -83,6 +83,7 @@ interface Persona {
   name: string;
   agent_name: string | null;
   description: string;
+  description_es: string | null;
 }
 
 interface ChatMsg {
@@ -101,6 +102,28 @@ interface Attachment {
 
 const ATTACH_ACCEPT =
   "image/*,.pdf,.txt,.md,.markdown,.csv,.json,.log,.rtf,.doc,.docx";
+
+async function extractDocx(file: File): Promise<string> {
+  // @ts-expect-error no types shipped for browser bundle
+  const mammoth = await import("mammoth/mammoth.browser.js");
+  const buf = await file.arrayBuffer();
+  const { value } = await mammoth.extractRawText({ arrayBuffer: buf });
+  return value ?? "";
+}
+
+async function extractPdf(file: File): Promise<string> {
+  const pdfjs = await import("pdfjs-dist");
+  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc = "";
+  const buf = await file.arrayBuffer();
+  const doc = await pdfjs.getDocument({ data: buf } as never).promise;
+  let out = "";
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    out += content.items.map((it) => ("str" in it ? it.str : "")).join(" ") + "\n\n";
+  }
+  return out;
+}
 
 function Index() {
   const [personas, setPersonas] = useState<Persona[]>([]);
@@ -133,7 +156,7 @@ function Index() {
     let mounted = true;
     supabase
       .from("agent_personas")
-      .select("slug,name,agent_name,description")
+      .select("slug,name,agent_name,description,description_es")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
         if (!mounted) return;
@@ -164,6 +187,9 @@ function Index() {
     [personas, personaSlug],
   );
 
+  const describe = (p: Persona | undefined) =>
+    !p ? "" : (language === "es" ? (p.description_es?.trim() || p.description) : p.description);
+
   async function handleSend() {
     const text = input.trim();
     if ((!text && attachments.length === 0) || busy) return;
@@ -193,50 +219,69 @@ function Index() {
     setBusy(true);
 
     try {
-      const resp = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          brain,
-          personaSlug,
-          language,
-          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
-        }),
-      });
-
-      const ct = resp.headers.get("content-type") ?? "";
-
-      if (ct.includes("application/json")) {
+      // Image branch (single JSON response)
+      if (brain === "image") {
+        const resp = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brain, personaSlug, language,
+            messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          }),
+        });
         const j = await resp.json();
         if (!resp.ok) throw new Error(j?.error ?? `Error ${resp.status}`);
         setMessages((m) => [
           ...m,
-          {
-            role: "assistant",
-            content: j.imageUrl ? "" : "(no image returned)",
-            imageUrl: j.imageUrl ?? undefined,
-          },
+          { role: "assistant", content: j.imageUrl ? "" : "(no image returned)", imageUrl: j.imageUrl ?? undefined },
         ]);
       } else {
-        if (!resp.ok || !resp.body) {
-          const t = await resp.text();
-          throw new Error(t || `Error ${resp.status}`);
-        }
+        // Streaming branch with [PART_PAUSE] auto-continuation loop.
         setMessages((m) => [...m, { role: "assistant", content: "" }]);
-        const reader = resp.body.getReader();
-        const dec = new TextDecoder();
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          const chunk = dec.decode(value, { stream: true });
-          setMessages((m) => {
-            const copy = m.slice();
-            const last = copy[copy.length - 1];
-            if (last && last.role === "assistant") {
-              copy[copy.length - 1] = { ...last, content: last.content + chunk };
-            }
-            return copy;
+        let convo = nextMessages.slice();
+        let aggregate = "";
+        const MAX_PARTS = 8;
+        for (let part = 0; part < MAX_PARTS; part++) {
+          const resp = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              brain, personaSlug, language,
+              messages: convo.map((m) => ({ role: m.role, content: m.content })),
+            }),
           });
+          if (!resp.ok || !resp.body) {
+            const t = await resp.text();
+            throw new Error(t || `Error ${resp.status}`);
+          }
+          const reader = resp.body.getReader();
+          const dec = new TextDecoder();
+          let partText = "";
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = dec.decode(value, { stream: true });
+            partText += chunk;
+            aggregate += chunk;
+            setMessages((m) => {
+              const copy = m.slice();
+              const last = copy[copy.length - 1];
+              if (last && last.role === "assistant") {
+                copy[copy.length - 1] = { ...last, content: aggregate.replace(/\[PART_PAUSE\]\s*$/i, "") };
+              }
+              return copy;
+            });
+          }
+          if (!/\[PART_PAUSE\]\s*$/i.test(partText.trim())) break;
+          // Strip token from aggregate and prepare a silent continuation turn.
+          aggregate = aggregate.replace(/\[PART_PAUSE\]\s*$/i, "");
+          convo = [
+            ...convo,
+            { role: "assistant", content: partText.replace(/\[PART_PAUSE\]\s*$/i, "") },
+            { role: "user", content: language === "es"
+                ? "Continúa exactamente donde te detuviste sin repetir texto anterior. Cuando termines por completo, no imprimas [PART_PAUSE]."
+                : "Continue exactly where you left off without repeating prior text. When fully complete, do not print [PART_PAUSE]." },
+          ];
         }
       }
     } catch (e) {
@@ -261,7 +306,15 @@ function Index() {
         });
         next.push({ id, name: f.name, kind: "image", dataUrl });
       } else {
-        const txt = await f.text().catch(() => "");
+        const lower = f.name.toLowerCase();
+        let txt = "";
+        try {
+          if (lower.endsWith(".docx")) txt = await extractDocx(f);
+          else if (lower.endsWith(".pdf")) txt = await extractPdf(f);
+          else txt = await f.text();
+        } catch (e) {
+          txt = `[Could not parse ${f.name}: ${(e as Error).message}]`;
+        }
         next.push({ id, name: f.name, kind: "text", text: txt });
       }
     }
@@ -328,7 +381,7 @@ function Index() {
                     {activePersona?.agent_name ?? activePersona?.name ?? (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
                   <span className="mt-0.5 text-[11px] text-sky-200/70 leading-tight truncate max-w-[260px]">
-                    {activePersona?.description ?? " "}
+                    {describe(activePersona) || " "}
                   </span>
                 </button>
                 {personaOpen && personas.length > 0 && (
@@ -354,7 +407,7 @@ function Index() {
                               {p.agent_name ?? p.name}
                             </span>
                             <span className="text-[11px] text-sky-200/70 leading-snug">
-                              {p.description}
+                              {describe(p)}
                             </span>
                           </button>
                         </li>
@@ -375,7 +428,7 @@ function Index() {
         {/* Embedded background brand mark — full-width, no opacity */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-cover"
+          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain"
           style={{ backgroundImage: `url(${logoAsset.url})` }}
         />
         <div
