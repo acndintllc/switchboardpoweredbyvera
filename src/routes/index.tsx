@@ -165,6 +165,9 @@ function Index() {
     [personas, personaSlug],
   );
 
+  const describe = (p: Persona | undefined) =>
+    !p ? "" : (language === "es" ? (p.description_es?.trim() || p.description) : p.description);
+
   async function handleSend() {
     const text = input.trim();
     if ((!text && attachments.length === 0) || busy) return;
@@ -376,7 +379,7 @@ function Index() {
         {/* Embedded background brand mark — full-width, no opacity */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-cover"
+          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain"
           style={{ backgroundImage: `url(${logoAsset.url})` }}
         />
         <div
