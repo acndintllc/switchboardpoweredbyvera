@@ -267,7 +267,7 @@ function Index() {
         {/* Embedded background brand mark */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain opacity-[0.08]"
+          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain opacity-[0.22]"
           style={{ backgroundImage: `url(${logoAsset.url})` }}
         />
         <div
