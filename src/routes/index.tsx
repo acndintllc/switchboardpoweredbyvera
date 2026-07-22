@@ -155,7 +155,7 @@ function Index() {
   useEffect(() => {
     let mounted = true;
     supabase
-      .from("agent_personas")
+      .from("agent_personas_public" as never)
       .select("slug,name,agent_name,description,description_es")
       .order("sort_order", { ascending: true })
       .then(({ data, error }) => {
