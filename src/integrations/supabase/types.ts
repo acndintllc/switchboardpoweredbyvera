@@ -103,7 +103,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      agent_personas_public: {
+        Row: {
+          agent_name: string | null
+          description: string | null
+          description_es: string | null
+          name: string | null
+          slug: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          agent_name?: string | null
+          description?: string | null
+          description_es?: string | null
+          name?: string | null
+          slug?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          agent_name?: string | null
+          description?: string | null
+          description_es?: string | null
+          name?: string | null
+          slug?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
