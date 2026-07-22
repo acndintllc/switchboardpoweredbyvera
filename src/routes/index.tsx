@@ -508,7 +508,7 @@ function Index() {
                   className="flex h-14 min-w-[280px] flex-col items-start justify-center rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1 text-left text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-50"
                 >
                   <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight">
-                    {activePersona?.agent_name ?? activePersona?.name ?? (personas.length === 0 ? t.loading : t.selectPersona)}
+                    {displayLabel(activePersona) || activePersona?.agent_name || activePersona?.name || (personas.length === 0 ? t.loading : t.selectPersona)}
                   </span>
                   <span className="mt-0.5 text-[11px] text-sky-200/70 leading-tight truncate max-w-[260px]">
                     {describe(activePersona) || " "}
