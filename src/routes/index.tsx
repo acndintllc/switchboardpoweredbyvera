@@ -138,6 +138,11 @@ function Index() {
   const [personaOpen, setPersonaOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [session, setSession] = useState<{ email: string | null } | null>(null);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [language, setLanguage] = useState<Lang>(() => {
     if (typeof navigator === "undefined") return "en";
     return (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -154,6 +159,48 @@ function Index() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ? { email: data.session.user.email ?? null } : null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s ? { email: s.user.email ?? null } : null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function handleAuth(mode: "signin" | "signup") {
+    if (!authEmail || !authPassword) return;
+    setAuthBusy(true);
+    setAuthNotice(null);
+    try {
+      if (mode === "signup") {
+        const redirectTo = `${window.location.origin}/`;
+        const { error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+          options: { emailRedirectTo: redirectTo },
+        });
+        if (error) throw error;
+        setAuthNotice(
+          language === "es"
+            ? "Revisa tu correo para confirmar la cuenta, luego inicia sesión."
+            : "Check your email to confirm the account, then sign in.",
+        );
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: authEmail,
+          password: authPassword,
+        });
+        if (error) throw error;
+      }
+    } catch (e) {
+      setAuthNotice((e as Error).message);
+    } finally {
+      setAuthBusy(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -377,6 +424,16 @@ function Index() {
               {" / "}
               <span className={language === "es" ? "text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" : "text-sky-300/40"}>ES</span> ]
             </button>
+            {session && (
+              <button
+                type="button"
+                onClick={() => void supabase.auth.signOut()}
+                title={session.email ?? ""}
+                className="font-display h-14 rounded-md border border-sky-500/60 bg-sky-950/60 px-3 text-xs font-semibold uppercase tracking-wider text-sky-200 hover:bg-sky-900/70"
+              >
+                {language === "es" ? "Salir" : "Sign out"}
+              </button>
+            )}
             <div className="flex flex-col">
               <label className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
                 {t.activeBrain}
@@ -598,6 +655,51 @@ function Index() {
           }}
           className="sticky bottom-0 z-10 flex items-end gap-2 border-t border-border bg-background/85 backdrop-blur py-3"
         >
+          {!session ? (
+            <div className="flex w-full flex-col gap-2 rounded-md border border-sky-500/40 bg-sky-950/60 p-3 text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)]">
+              <p className="font-display text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
+                {language === "es" ? "Inicia sesión para chatear" : "Sign in to chat"}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder={language === "es" ? "Correo" : "Email"}
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
+                />
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder={language === "es" ? "Contraseña" : "Password"}
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
+                />
+                <button
+                  type="button"
+                  disabled={authBusy}
+                  onClick={() => void handleAuth("signin")}
+                  className="rounded-md bg-sky-500 px-4 py-2 text-sm font-semibold text-black hover:bg-sky-400 disabled:opacity-50"
+                >
+                  {language === "es" ? "Entrar" : "Sign in"}
+                </button>
+                <button
+                  type="button"
+                  disabled={authBusy}
+                  onClick={() => void handleAuth("signup")}
+                  className="rounded-md border border-sky-400/60 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-900/60 disabled:opacity-50"
+                >
+                  {language === "es" ? "Registrarse" : "Sign up"}
+                </button>
+              </div>
+              {authNotice && (
+                <p className="text-xs text-sky-200/80">{authNotice}</p>
+              )}
+            </div>
+          ) : (
+          <>
           <input
             ref={fileInputRef}
             type="file"
@@ -639,6 +741,8 @@ function Index() {
           >
             {busy ? "…" : t.send}
           </button>
+          </>
+          )}
         </form>
       </main>
     </div>
