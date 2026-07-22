@@ -261,10 +261,18 @@ function Index() {
       </header>
 
       {/* Chat */}
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4">
+      <main
+        className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col px-4"
+      >
+        {/* Embedded background brand mark */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain opacity-[0.08]"
+          style={{ backgroundImage: `url(${logoAsset.url})` }}
+        />
         <div
           ref={scrollRef}
-          className="flex-1 space-y-4 overflow-y-auto py-6"
+          className="relative z-10 flex-1 space-y-4 overflow-y-auto py-6"
           style={{ minHeight: "60vh" }}
         >
           {messages.length === 0 && (
@@ -315,7 +323,7 @@ function Index() {
             e.preventDefault();
             void handleSend();
           }}
-          className="sticky bottom-0 flex items-end gap-2 border-t border-border bg-background py-3"
+          className="sticky bottom-0 z-10 flex items-end gap-2 border-t border-border bg-background/85 backdrop-blur py-3"
         >
           <textarea
             value={input}
