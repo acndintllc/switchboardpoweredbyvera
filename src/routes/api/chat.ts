@@ -250,7 +250,7 @@ async function generateImage(opts: {
       Authorization: `Bearer ${opts.apiKey}`,
     },
     body: JSON.stringify({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt: combined,
       n: 1,
       size: "1024x1024",
@@ -263,7 +263,8 @@ async function generateImage(opts: {
       { status: resp.status },
     );
   }
-  const url = json?.data?.[0]?.url ?? null;
+  const item = json?.data?.[0] ?? {};
+  const url = item.url ?? (item.b64_json ? `data:image/png;base64,${item.b64_json}` : null);
   return Response.json({ imageUrl: url, prompt: combined });
 }
 
