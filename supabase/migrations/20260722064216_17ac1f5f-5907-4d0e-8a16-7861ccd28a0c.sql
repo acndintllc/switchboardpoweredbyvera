@@ -1,0 +1,1 @@
+DELETE FROM public.agent_personas WHERE slug IN ('the-duo','the-power-trio','the-architect','editorial-scribe','cmo-engine');
