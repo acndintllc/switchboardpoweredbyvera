@@ -19,12 +19,15 @@ export type Database = {
           agent_name: string | null
           audit_loop: string
           boundaries: string
+          category: string | null
           constitution: string
           constitutional_boundaries_en: string | null
           constitutional_boundaries_es: string | null
           created_at: string
           description: string
           description_es: string | null
+          display_label: string | null
+          display_label_es: string | null
           engagement: string
           governance_audit_loop_en: string | null
           governance_audit_loop_es: string | null
@@ -47,12 +50,15 @@ export type Database = {
           agent_name?: string | null
           audit_loop?: string
           boundaries?: string
+          category?: string | null
           constitution?: string
           constitutional_boundaries_en?: string | null
           constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
           description_es?: string | null
+          display_label?: string | null
+          display_label_es?: string | null
           engagement?: string
           governance_audit_loop_en?: string | null
           governance_audit_loop_es?: string | null
@@ -75,12 +81,15 @@ export type Database = {
           agent_name?: string | null
           audit_loop?: string
           boundaries?: string
+          category?: string | null
           constitution?: string
           constitutional_boundaries_en?: string | null
           constitutional_boundaries_es?: string | null
           created_at?: string
           description?: string
           description_es?: string | null
+          display_label?: string | null
+          display_label_es?: string | null
           engagement?: string
           governance_audit_loop_en?: string | null
           governance_audit_loop_es?: string | null
@@ -106,24 +115,33 @@ export type Database = {
       agent_personas_public: {
         Row: {
           agent_name: string | null
+          category: string | null
           description: string | null
           description_es: string | null
+          display_label: string | null
+          display_label_es: string | null
           name: string | null
           slug: string | null
           sort_order: number | null
         }
         Insert: {
           agent_name?: string | null
+          category?: string | null
           description?: string | null
           description_es?: string | null
+          display_label?: string | null
+          display_label_es?: string | null
           name?: string | null
           slug?: string | null
           sort_order?: number | null
         }
         Update: {
           agent_name?: string | null
+          category?: string | null
           description?: string | null
           description_es?: string | null
+          display_label?: string | null
+          display_label_es?: string | null
           name?: string | null
           slug?: string | null
           sort_order?: number | null
