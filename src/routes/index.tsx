@@ -419,6 +419,32 @@ function Index() {
           </div>
         )}
 
+        {attachments.length > 0 && (
+          <div className="relative z-10 mb-2 flex flex-wrap gap-2">
+            {attachments.map((a) => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-2 rounded-md border border-sky-500/50 bg-sky-950/70 px-2 py-1 text-xs text-sky-100"
+              >
+                {a.kind === "image" && a.dataUrl ? (
+                  <img src={a.dataUrl} alt={a.name} className="h-6 w-6 rounded object-cover" />
+                ) : (
+                  <span aria-hidden>📎</span>
+                )}
+                <span className="max-w-[180px] truncate">{a.name}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${a.name}`}
+                  onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
+                  className="text-sky-300 hover:text-white"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -468,31 +494,6 @@ function Index() {
             {busy ? "…" : t.send}
           </button>
         </form>
-        {attachments.length > 0 && (
-          <div className="relative z-10 mb-2 flex flex-wrap gap-2">
-            {attachments.map((a) => (
-              <span
-                key={a.id}
-                className="inline-flex items-center gap-2 rounded-md border border-sky-500/50 bg-sky-950/70 px-2 py-1 text-xs text-sky-100"
-              >
-                {a.kind === "image" && a.dataUrl ? (
-                  <img src={a.dataUrl} alt={a.name} className="h-6 w-6 rounded object-cover" />
-                ) : (
-                  <span aria-hidden>📎</span>
-                )}
-                <span className="max-w-[180px] truncate">{a.name}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove ${a.name}`}
-                  onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
-                  className="text-sky-300 hover:text-white"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
       </main>
     </div>
   );
