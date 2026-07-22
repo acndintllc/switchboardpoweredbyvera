@@ -42,7 +42,7 @@ const PILLAR_KEYS: Array<{ base: keyof PersonaRow; en: keyof PersonaRow; es: key
   { base: "role",         en: "structural_role_en",           es: "structural_role_es",           label: "STRUCTURAL ROLE" },
   { base: "personality",  en: "personality_anchors_en",       es: "personality_anchors_es",       label: "PERSONALITY ANCHORS" },
   { base: "constitution", en: "constitutional_boundaries_en", es: "constitutional_boundaries_es", label: "CONSTITUTIONAL BOUNDARIES" },
-  { base: "boundaries",   en: "constitutional_boundaries_en", es: "constitutional_boundaries_es", label: "BOUNDARIES" },
+  { base: "boundaries",   en: "boundaries",                   es: "boundaries",                   label: "BOUNDARIES" },
   { base: "engagement",   en: "rules_of_engagement_en",       es: "rules_of_engagement_es",       label: "RULES OF ENGAGEMENT" },
   { base: "audit_loop",   en: "governance_audit_loop_en",     es: "governance_audit_loop_es",     label: "GOVERNANCE AUDIT LOOP" },
 ];
