@@ -145,6 +145,7 @@ function Index() {
   const t = DICT[language];
   const scrollRef = useRef<HTMLDivElement>(null);
   const personaBoxRef = useRef<HTMLDivElement>(null);
+  const artifactRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -179,6 +180,18 @@ function Index() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Latest assistant output drives the Artifact Canvas (right panel).
+  const latestArtifact = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") return messages[i];
+    }
+    return null;
+  }, [messages]);
+
+  useEffect(() => {
+    artifactRef.current?.scrollTo({ top: artifactRef.current.scrollHeight, behavior: "smooth" });
+  }, [latestArtifact?.content, latestArtifact?.imageUrl]);
 
   const activeBrainLabel = useMemo(
     () => BRAINS.find((b) => b.value === brain)?.label ?? brain,
@@ -440,7 +453,7 @@ function Index() {
 
       {/* Chat */}
       <main
-        className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col px-4"
+        className="relative mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4"
       >
         {/* Embedded background brand mark — full-width, no opacity */}
         <div
@@ -448,43 +461,102 @@ function Index() {
           className="pointer-events-none absolute inset-0 z-0 bg-center bg-no-repeat bg-contain"
           style={{ backgroundImage: `url(${logoAsset.url})` }}
         />
+        {/* Split workspace: Interaction Feed (40%) | Artifact Canvas (60%) */}
         <div
-          ref={scrollRef}
-          className="relative z-10 flex-1 space-y-4 overflow-y-auto py-6"
+          className="relative z-10 grid flex-1 grid-cols-1 gap-4 py-6 lg:grid-cols-[40fr_60fr]"
           style={{ minHeight: "60vh" }}
         >
-          {messages.length === 0 && (
-            <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-              <p className="font-display font-semibold uppercase tracking-wide text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
-                {activeBrainLabel} × {activePersona?.agent_name ?? activePersona?.name ?? "…"}
+          {/* Left: Interaction Feed */}
+          <section
+            aria-label="Interaction Feed"
+            className="flex min-h-[50vh] flex-col rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm"
+          >
+            <header className="border-b border-sky-500/20 px-3 py-2">
+              <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
+                Interaction Feed
               </p>
-              <p className="mt-1 text-white">{t.emptyBody}</p>
-            </div>
-          )}
-          {messages.map((m, i) => (
+            </header>
             <div
-              key={i}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              ref={scrollRef}
+              className="flex-1 space-y-3 overflow-y-auto px-3 py-4"
             >
-              <div
-                className="max-w-[80%] rounded-2xl bg-black/75 px-4 py-2.5 text-sm font-medium text-white whitespace-pre-wrap shadow-[0_0_22px_rgba(255,255,255,0.18)] ring-1 ring-white/10"
-              >
-                {m.imageUrl ? (
-                  <img
-                    src={m.imageUrl}
-                    alt={
-                      m.role === "assistant"
-                        ? `AI generated image: ${messages[i - 1]?.content?.slice(0, 140) ?? "prompt"}`
-                        : "User attached image"
-                    }
-                    className="max-w-full rounded-lg"
-                  />
-                ) : (
-                  m.content || (busy && i === messages.length - 1 ? "…" : "")
-                )}
-              </div>
+              {messages.length === 0 && (
+                <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                  <p className="font-display font-semibold uppercase tracking-wide text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
+                    {activeBrainLabel} × {activePersona?.agent_name ?? activePersona?.name ?? "…"}
+                  </p>
+                  <p className="mt-1 text-white">{t.emptyBody}</p>
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div className="max-w-[90%] rounded-2xl bg-black/75 px-3.5 py-2 text-sm font-medium text-white whitespace-pre-wrap shadow-[0_0_22px_rgba(255,255,255,0.18)] ring-1 ring-white/10">
+                    {m.imageUrl && m.role === "user" ? (
+                      <img
+                        src={m.imageUrl}
+                        alt="User attached image"
+                        className="max-w-full rounded-lg"
+                      />
+                    ) : m.role === "assistant" && m.imageUrl ? (
+                      <span className="italic text-sky-200/80">
+                        {language === "es" ? "Imagen renderizada en el lienzo →" : "Image rendered in canvas →"}
+                      </span>
+                    ) : m.role === "assistant" ? (
+                      <span className="italic text-sky-200/80">
+                        {m.content
+                          ? (language === "es" ? "Documento en el lienzo →" : "Document in canvas →")
+                          : (busy && i === messages.length - 1 ? "…" : "")}
+                      </span>
+                    ) : (
+                      m.content
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </section>
+
+          {/* Right: Artifact Canvas */}
+          <section
+            aria-label="Artifact Canvas"
+            className="flex min-h-[50vh] flex-col rounded-lg border border-sky-500/30 bg-white/95 text-neutral-900 shadow-[0_0_28px_rgba(56,189,248,0.15)]"
+          >
+            <header className="flex items-center justify-between border-b border-neutral-300 px-4 py-2">
+              <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-700">
+                Artifact Canvas
+              </p>
+              <p className="text-[10px] uppercase tracking-wider text-neutral-500">
+                {activeBrainLabel}
+              </p>
+            </header>
+            <div
+              ref={artifactRef}
+              className="flex-1 overflow-y-auto"
+            >
+              {!latestArtifact ? (
+                <div className="flex h-full items-center justify-center p-10 text-center text-sm text-neutral-500">
+                  {language === "es"
+                    ? "El lienzo mostrará documentos, capítulos, gráficos e imágenes generadas en alta resolución."
+                    : "The canvas will render long-form documents, chapters, charts, and high-resolution generated images."}
+                </div>
+              ) : latestArtifact.imageUrl ? (
+                <div className="flex h-full w-full items-center justify-center bg-neutral-950 p-4">
+                  <img
+                    src={latestArtifact.imageUrl}
+                    alt={`AI generated image: ${messages[messages.indexOf(latestArtifact) - 1]?.content?.slice(0, 140) ?? "prompt"}`}
+                    className="max-h-[80vh] max-w-full rounded-md object-contain shadow-[0_0_40px_rgba(56,189,248,0.35)]"
+                  />
+                </div>
+              ) : (
+                <article className="mx-auto max-w-3xl px-8 py-10 font-serif text-[15px] leading-7 text-neutral-900 whitespace-pre-wrap">
+                  {latestArtifact.content || (busy ? "…" : "")}
+                </article>
+              )}
+            </div>
+          </section>
         </div>
 
         {error && (
