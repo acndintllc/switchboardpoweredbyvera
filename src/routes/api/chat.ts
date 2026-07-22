@@ -74,12 +74,10 @@ function compileSystemPrompt(p: PersonaRow, lang: Lang): string {
 }
 
 async function fetchPersona(slug: string): Promise<PersonaRow | null> {
-  const supa = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false } },
-  );
-  const { data } = await supa
+  // Full persona pillars are no longer readable by anon; use the service role
+  // client server-side to compile the system prompt.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
     .from("agent_personas")
     .select(
       "name,agent_name,description,role,personality,constitution,boundaries,engagement,audit_loop,structural_role_en,structural_role_es,personality_anchors_en,personality_anchors_es,constitutional_boundaries_en,constitutional_boundaries_es,rules_of_engagement_en,rules_of_engagement_es,governance_audit_loop_en,governance_audit_loop_es",
@@ -87,6 +85,31 @@ async function fetchPersona(slug: string): Promise<PersonaRow | null> {
     .eq("slug", slug)
     .maybeSingle();
   return (data as PersonaRow | null) ?? null;
+}
+
+// Verify the caller has a valid Supabase session. This endpoint proxies paid
+// AI providers (OpenAI, Anthropic, xAI) so it must never be callable by
+// anonymous clients.
+async function requireAuthedUser(request: Request): Promise<{ ok: true; userId: string } | { ok: false; response: Response }> {
+  const authHeader = request.headers.get("authorization") ?? "";
+  if (!authHeader.toLowerCase().startsWith("bearer ")) {
+    return { ok: false, response: new Response("Unauthorized", { status: 401 }) };
+  }
+  const token = authHeader.slice(7).trim();
+  if (!token || token.split(".").length !== 3) {
+    return { ok: false, response: new Response("Unauthorized", { status: 401 }) };
+  }
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) {
+    return { ok: false, response: new Response("Server auth misconfigured", { status: 500 }) };
+  }
+  const supa = createClient(url, key, { auth: { persistSession: false } });
+  const { data, error } = await supa.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    return { ok: false, response: new Response("Unauthorized", { status: 401 }) };
+  }
+  return { ok: true, userId: data.claims.sub as string };
 }
 
 // -------- Streaming helpers --------
@@ -248,6 +271,8 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const auth = await requireAuthedUser(request);
+        if (!auth.ok) return auth.response;
         let body: Body;
         try {
           body = (await request.json()) as Body;
