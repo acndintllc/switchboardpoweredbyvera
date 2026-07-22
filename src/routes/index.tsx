@@ -219,11 +219,24 @@ function Index() {
     setBusy(true);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        throw new Error(
+          language === "es"
+            ? "Inicia sesión para enviar mensajes."
+            : "Please sign in to send messages.",
+        );
+      }
+      const authHeaders = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      } as const;
       // Image branch (single JSON response)
       if (brain === "image") {
         const resp = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders,
           body: JSON.stringify({
             brain, personaSlug, language,
             messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
@@ -244,7 +257,7 @@ function Index() {
         for (let part = 0; part < MAX_PARTS; part++) {
           const resp = await fetch("/api/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders,
             body: JSON.stringify({
               brain, personaSlug, language,
               messages: convo.map((m) => ({ role: m.role, content: m.content })),
