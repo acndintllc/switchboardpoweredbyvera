@@ -1,0 +1,9 @@
+# Switchboard — Powered by VERA
+
+> Bilingual AI workstation that pairs any large-language model (Claude, ChatGPT, Grok) or DALL·E image generation with an expert agent persona.
+
+Switchboard lets operators swap the "brain" (model) and the "persona" (role, personality, boundaries, engagement, audit loop) independently, then route a single prompt through the chosen pair. Personas cover fiction, nonfiction, marketing, operations, records, translation, and creative image direction.
+
+## Pages
+
+- [Home](/): The Switchboard workstation. Select a brain and a persona, then chat or generate images.
