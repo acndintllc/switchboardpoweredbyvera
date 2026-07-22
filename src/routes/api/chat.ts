@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
 type Brain = "claude" | "chatgpt" | "grok" | "image";
+type Lang = "en" | "es";
 
 interface Msg {
   role: "user" | "assistant";
@@ -12,20 +13,23 @@ interface Body {
   brain: Brain;
   personaSlug: string;
   messages: Msg[];
+  language?: Lang;
 }
-
-const PILLAR_LABELS: Array<[keyof PersonaRow, string]> = [
-  ["role", "ROLE"],
-  ["personality", "PERSONALITY"],
-  ["constitution", "CONSTITUTION"],
-  ["boundaries", "BOUNDARIES"],
-  ["engagement", "ENGAGEMENT"],
-  ["audit_loop", "AUDIT LOOP"],
-];
 
 interface PersonaRow {
   name: string;
+  agent_name: string | null;
   description: string;
+  structural_role_en: string | null;
+  structural_role_es: string | null;
+  personality_anchors_en: string | null;
+  personality_anchors_es: string | null;
+  constitutional_boundaries_en: string | null;
+  constitutional_boundaries_es: string | null;
+  rules_of_engagement_en: string | null;
+  rules_of_engagement_es: string | null;
+  governance_audit_loop_en: string | null;
+  governance_audit_loop_es: string | null;
   role: string;
   personality: string;
   constitution: string;
@@ -34,16 +38,39 @@ interface PersonaRow {
   audit_loop: string;
 }
 
-function compileSystemPrompt(p: PersonaRow): string {
-  const header = `You are "${p.name}" — ${p.description}.`;
-  const pillars = PILLAR_LABELS.map(([k, label]) => {
-    const v = (p[k] ?? "").toString().trim();
-    if (!v) return null;
+const PILLAR_KEYS: Array<{ base: keyof PersonaRow; en: keyof PersonaRow; es: keyof PersonaRow; label: string }> = [
+  { base: "role",         en: "structural_role_en",           es: "structural_role_es",           label: "STRUCTURAL ROLE" },
+  { base: "personality",  en: "personality_anchors_en",       es: "personality_anchors_es",       label: "PERSONALITY ANCHORS" },
+  { base: "constitution", en: "constitutional_boundaries_en", es: "constitutional_boundaries_es", label: "CONSTITUTIONAL BOUNDARIES" },
+  { base: "boundaries",   en: "constitutional_boundaries_en", es: "constitutional_boundaries_es", label: "BOUNDARIES" },
+  { base: "engagement",   en: "rules_of_engagement_en",       es: "rules_of_engagement_es",       label: "RULES OF ENGAGEMENT" },
+  { base: "audit_loop",   en: "governance_audit_loop_en",     es: "governance_audit_loop_es",     label: "GOVERNANCE AUDIT LOOP" },
+];
+
+function pick(row: PersonaRow, lang: Lang, en: keyof PersonaRow, es: keyof PersonaRow, base: keyof PersonaRow): string {
+  const primary = (row[lang === "es" ? es : en] ?? "").toString().trim();
+  if (primary) return primary;
+  const fallback = (row[en] ?? "").toString().trim();
+  if (fallback) return fallback;
+  return (row[base] ?? "").toString().trim();
+}
+
+function compileSystemPrompt(p: PersonaRow, lang: Lang): string {
+  const displayName = p.agent_name || p.name;
+  const langName = lang === "es" ? "Spanish" : "English";
+  const langHeader = `CRITICAL: The target processing and output language environment for this entire stream session is explicitly set to ${langName}. Deliver the final canvas text response strictly in this language format while preserving 100% of your 6 pillar persona constraints.`;
+  const header = `You are "${displayName}", ${p.description}.`;
+  const seen = new Set<string>();
+  const pillars = PILLAR_KEYS.map(({ base, en, es, label }) => {
+    const v = pick(p, lang, en, es, base);
+    if (!v || seen.has(label)) return null;
+    seen.add(label);
     return `## ${label}\n${v}`;
   })
     .filter(Boolean)
     .join("\n\n");
-  return pillars ? `${header}\n\n${pillars}` : header;
+  const body = pillars ? `${header}\n\n${pillars}` : header;
+  return `${langHeader}\n\n${body}`;
 }
 
 async function fetchPersona(slug: string): Promise<PersonaRow | null> {
@@ -54,7 +81,9 @@ async function fetchPersona(slug: string): Promise<PersonaRow | null> {
   );
   const { data } = await supa
     .from("agent_personas")
-    .select("name,description,role,personality,constitution,boundaries,engagement,audit_loop")
+    .select(
+      "name,agent_name,description,role,personality,constitution,boundaries,engagement,audit_loop,structural_role_en,structural_role_es,personality_anchors_en,personality_anchors_es,constitutional_boundaries_en,constitutional_boundaries_es,rules_of_engagement_en,rules_of_engagement_es,governance_audit_loop_en,governance_audit_loop_es",
+    )
     .eq("slug", slug)
     .maybeSingle();
   return (data as PersonaRow | null) ?? null;
@@ -226,13 +255,14 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Invalid JSON", { status: 400 });
         }
         const { brain, personaSlug, messages } = body;
+        const language: Lang = body.language === "es" ? "es" : "en";
         if (!brain || !personaSlug || !Array.isArray(messages)) {
           return new Response("Missing brain, personaSlug, or messages", { status: 400 });
         }
 
         const persona = await fetchPersona(personaSlug);
         if (!persona) return new Response("Persona not found", { status: 404 });
-        const system = compileSystemPrompt(persona);
+        const system = compileSystemPrompt(persona, language);
 
         if (brain === "image") {
           const key = process.env.OPENAI_API_KEY;
