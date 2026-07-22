@@ -143,6 +143,7 @@ function Index() {
   const [authPassword, setAuthPassword] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [language, setLanguage] = useState<Lang>(() => {
     if (typeof navigator === "undefined") return "en";
     return (navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
@@ -195,6 +196,34 @@ function Index() {
         });
         if (error) throw error;
       }
+    } catch (e) {
+      setAuthNotice((e as Error).message);
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!authEmail) {
+      setAuthNotice(
+        language === "es"
+          ? "Escribe tu correo y luego pulsa recuperar contraseña."
+          : "Enter your email, then click reset password.",
+      );
+      return;
+    }
+    setAuthBusy(true);
+    setAuthNotice(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(authEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setAuthNotice(
+        language === "es"
+          ? "Te enviamos un enlace para restablecer la contraseña."
+          : "We sent you a password reset link.",
+      );
     } catch (e) {
       setAuthNotice((e as Error).message);
     } finally {
@@ -520,7 +549,7 @@ function Index() {
         />
         {/* Split workspace: Interaction Feed (40%) | Artifact Canvas (60%) */}
         <div
-          className="relative z-10 grid flex-1 grid-cols-1 gap-4 py-6 lg:grid-cols-[40fr_60fr]"
+          className="relative z-10 grid flex-1 grid-cols-1 gap-4 py-6 md:grid-cols-[40fr_60fr]"
           style={{ minHeight: "60vh" }}
         >
           {/* Left: Interaction Feed */}
@@ -579,13 +608,13 @@ function Index() {
           {/* Right: Artifact Canvas */}
           <section
             aria-label="Artifact Canvas"
-            className="flex min-h-[50vh] flex-col rounded-lg border border-sky-500/30 bg-white/95 text-neutral-900 shadow-[0_0_28px_rgba(56,189,248,0.15)]"
+            className="flex min-h-[50vh] flex-col rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm shadow-[0_0_28px_rgba(56,189,248,0.15)]"
           >
-            <header className="flex items-center justify-between border-b border-neutral-300 px-4 py-2">
-              <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-700">
+            <header className="flex items-center justify-between border-b border-sky-500/20 px-4 py-2">
+              <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 Artifact Canvas
               </p>
-              <p className="text-[10px] uppercase tracking-wider text-neutral-500">
+              <p className="text-[10px] uppercase tracking-wider text-sky-200/60">
                 {activeBrainLabel}
               </p>
             </header>
@@ -594,13 +623,13 @@ function Index() {
               className="flex-1 overflow-y-auto"
             >
               {!latestArtifact ? (
-                <div className="flex h-full items-center justify-center p-10 text-center text-sm text-neutral-500">
+                <div className="flex h-full items-center justify-center p-10 text-center text-sm text-sky-200/60">
                   {language === "es"
                     ? "El lienzo mostrará documentos, capítulos, gráficos e imágenes generadas en alta resolución."
                     : "The canvas will render long-form documents, chapters, charts, and high-resolution generated images."}
                 </div>
               ) : latestArtifact.imageUrl ? (
-                <div className="flex h-full w-full items-center justify-center bg-neutral-950 p-4">
+                <div className="flex h-full w-full items-center justify-center p-4">
                   <img
                     src={latestArtifact.imageUrl}
                     alt={`AI generated image: ${messages[messages.indexOf(latestArtifact) - 1]?.content?.slice(0, 140) ?? "prompt"}`}
@@ -608,7 +637,7 @@ function Index() {
                   />
                 </div>
               ) : (
-                <article className="mx-auto max-w-3xl px-8 py-10 font-serif text-[15px] leading-7 text-neutral-900 whitespace-pre-wrap">
+                <article className="mx-auto max-w-3xl px-8 py-10 font-serif text-[15px] leading-7 text-white whitespace-pre-wrap">
                   {latestArtifact.content || (busy ? "…" : "")}
                 </article>
               )}
@@ -669,14 +698,23 @@ function Index() {
                   onChange={(e) => setAuthEmail(e.target.value)}
                   className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
                 />
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder={language === "es" ? "Contraseña" : "Password"}
-                  value={authPassword}
-                  onChange={(e) => setAuthPassword(e.target.value)}
-                  className="flex-1 min-w-[180px] rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-sky-400"
-                />
+                <div className="relative flex-1 min-w-[180px]">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder={language === "es" ? "Contraseña" : "Password"}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="w-full rounded-md border border-sky-500/40 bg-black/40 px-3 py-2 pr-16 text-sm outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold uppercase tracking-wider text-sky-300 hover:text-sky-200"
+                  >
+                    {showPassword ? (language === "es" ? "Ocultar" : "Hide") : (language === "es" ? "Ver" : "Show")}
+                  </button>
+                </div>
                 <button
                   type="button"
                   disabled={authBusy}
@@ -692,6 +730,14 @@ function Index() {
                   className="rounded-md border border-sky-400/60 px-4 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-900/60 disabled:opacity-50"
                 >
                   {language === "es" ? "Registrarse" : "Sign up"}
+                </button>
+                <button
+                  type="button"
+                  disabled={authBusy}
+                  onClick={() => void handleResetPassword()}
+                  className="text-xs font-semibold uppercase tracking-wider text-sky-300 underline-offset-2 hover:text-sky-200 hover:underline disabled:opacity-50"
+                >
+                  {language === "es" ? "¿Olvidaste tu contraseña?" : "Forgot password?"}
                 </button>
               </div>
               {authNotice && (
