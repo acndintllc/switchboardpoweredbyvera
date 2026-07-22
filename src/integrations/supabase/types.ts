@@ -14,7 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agent_personas: {
+        Row: {
+          audit_loop: string
+          boundaries: string
+          constitution: string
+          created_at: string
+          description: string
+          engagement: string
+          id: string
+          name: string
+          personality: string
+          role: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          audit_loop?: string
+          boundaries?: string
+          constitution?: string
+          created_at?: string
+          description?: string
+          engagement?: string
+          id?: string
+          name: string
+          personality?: string
+          role?: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          audit_loop?: string
+          boundaries?: string
+          constitution?: string
+          created_at?: string
+          description?: string
+          engagement?: string
+          id?: string
+          name?: string
+          personality?: string
+          role?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
