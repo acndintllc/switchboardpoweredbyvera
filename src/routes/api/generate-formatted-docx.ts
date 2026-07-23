@@ -109,7 +109,6 @@ function buildChildren(content: string): Paragraph[] {
     }
 
     if (line.startsWith(">")) {
-    if (line.startsWith(">")) {
       const text = line.replace(/^>\s?/, "");
       out.push(
         new Paragraph({
