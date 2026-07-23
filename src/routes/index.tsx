@@ -151,6 +151,7 @@ function Index() {
   // wiped by a new user message. Image generations replace the image slot.
   const [artifactText, setArtifactText] = useState("");
   const [artifactImage, setArtifactImage] = useState<string | null>(null);
+  const [trimSize, setTrimSize] = useState<string>("6x9");
   const [session, setSession] = useState<{ email: string | null } | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
