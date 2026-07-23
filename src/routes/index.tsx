@@ -187,6 +187,7 @@ function Index() {
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!personaBoxRef.current?.contains(e.target as Node)) setPersonaOpen(false);
+      if (!trimBoxRef.current?.contains(e.target as Node)) setTrimOpen(false);
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
