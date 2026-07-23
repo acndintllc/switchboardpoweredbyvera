@@ -144,6 +144,11 @@ function Index() {
   const [personaOpen, setPersonaOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Artifact Canvas is a persistent document editor. It accumulates text
+  // across sends, pair switches, and [PART_PAUSE] continuations — never
+  // wiped by a new user message. Image generations replace the image slot.
+  const [artifactText, setArtifactText] = useState("");
+  const [artifactImage, setArtifactImage] = useState<string | null>(null);
   const [session, setSession] = useState<{ email: string | null } | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
