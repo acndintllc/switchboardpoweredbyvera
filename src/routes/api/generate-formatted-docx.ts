@@ -108,13 +108,12 @@ function buildChildren(content: string): Paragraph[] {
       continue;
     }
 
-    // Block quote
     if (line.startsWith(">")) {
+    if (line.startsWith(">")) {
+      const text = line.replace(/^>\s?/, "");
       out.push(
         new Paragraph({
-          children: parseInline(line.replace(/^>\s?/, "")).map(
-            (r) => new TextRun({ ...(r as unknown as { options: object }).options ?? {}, text: (r as unknown as { text?: string }).text ?? "", italics: true, font: "Garamond", size: 24 }),
-          ),
+          children: [new TextRun({ text, font: "Garamond", size: 24, italics: true })],
           indent: { left: 720, right: 720 },
           spacing: { after: 160 },
         }),
@@ -242,8 +241,9 @@ export const Route = createFileRoute("/api/generate-formatted-docx")({
         });
 
         const buf = await Packer.toBuffer(doc);
+        const bytes = new Uint8Array(buf);
         const safeName = title.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "") || "document";
-        return new Response(buf, {
+        return new Response(bytes, {
           status: 200,
           headers: {
             "Content-Type":
