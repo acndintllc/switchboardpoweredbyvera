@@ -287,17 +287,9 @@ function Index() {
     if (key) conversationsRef.current[key] = messages;
   }, [messages]);
 
-  // Latest assistant output drives the Artifact Canvas (right panel).
-  const latestArtifact = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "assistant") return messages[i];
-    }
-    return null;
-  }, [messages]);
-
   useEffect(() => {
     artifactRef.current?.scrollTo({ top: artifactRef.current.scrollHeight, behavior: "smooth" });
-  }, [latestArtifact?.content, latestArtifact?.imageUrl]);
+  }, [artifactText, artifactImage]);
 
   const activeBrainLabel = useMemo(
     () => BRAINS.find((b) => b.value === brain)?.label ?? brain,
