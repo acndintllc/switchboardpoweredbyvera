@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/switchboard-vera.png.asset.json";
-import headerLogoAsset from "@/assets/switchboard-header.png.asset.json";
+import headerLogoAsset from "@/assets/switchboard-logo-wide.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
