@@ -80,6 +80,21 @@ const BRAINS: { value: Brain; label: string }[] = [
   { value: "image", label: "Image Generation" },
 ];
 
+const TRIM_SIZES: { value: string; label: string; labelEs: string }[] = [
+  { value: "5x8", label: "5 x 8", labelEs: "5 x 8" },
+  { value: "5.25x8", label: "5.25 x 8", labelEs: "5.25 x 8" },
+  { value: "5.5x8.5", label: "5.5 x 8.5", labelEs: "5.5 x 8.5" },
+  { value: "6x9", label: "6 x 9", labelEs: "6 x 9" },
+  { value: "6.14x9.21", label: "6.14 x 9.21", labelEs: "6.14 x 9.21" },
+  { value: "7x10", label: "7 x 10", labelEs: "7 x 10" },
+  { value: "7.5x9.25", label: "7.5 x 9.25", labelEs: "7.5 x 9.25" },
+  { value: "8x10", label: "8 x 10", labelEs: "8 x 10" },
+  { value: "8.5x11", label: "8.5 x 11 Letter", labelEs: "8.5 x 11 Carta" },
+  { value: "8.5x5.5", label: "8.5 x 5.5 Half Letter", labelEs: "8.5 x 5.5 Media Carta" },
+  { value: "a4", label: "A4", labelEs: "A4" },
+  { value: "a5", label: "A5", labelEs: "A5" },
+];
+
 interface Persona {
   slug: string;
   name: string;
