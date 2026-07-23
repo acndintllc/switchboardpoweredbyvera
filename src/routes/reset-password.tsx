@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import headerLogoAsset from "@/assets/switchboard-logo-wide.png.asset.json";
+
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
