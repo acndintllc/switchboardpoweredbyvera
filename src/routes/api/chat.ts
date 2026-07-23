@@ -167,6 +167,7 @@ async function streamOpenAICompatible(opts: {
   system: string;
   messages: Msg[];
   extraHeaders?: Record<string, string>;
+  signal?: AbortSignal;
 }) {
   const body = {
     model: opts.model,
@@ -181,6 +182,7 @@ async function streamOpenAICompatible(opts: {
       ...(opts.extraHeaders ?? {}),
     },
     body: JSON.stringify(body),
+    signal: opts.signal,
   });
   if (!resp.ok || !resp.body) {
     const t = await resp.text();
@@ -203,6 +205,7 @@ async function streamAnthropic(opts: {
   apiKey: string;
   system: string;
   messages: Msg[];
+  signal?: AbortSignal;
 }) {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -218,6 +221,7 @@ async function streamAnthropic(opts: {
       system: opts.system,
       messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
     }),
+    signal: opts.signal,
   });
   if (!resp.ok || !resp.body) {
     const t = await resp.text();
@@ -306,7 +310,7 @@ export const Route = createFileRoute("/api/chat")({
         if (brain === "claude") {
           const key = process.env.ANTHROPIC_API_KEY;
           if (!key) return new Response("Missing ANTHROPIC_API_KEY", { status: 500 });
-          return textStream((write) => streamAnthropic({ write, apiKey: key, system, messages }));
+          return textStream((write) => streamAnthropic({ write, apiKey: key, system, messages, signal: request.signal }));
         }
 
         if (brain === "chatgpt") {
@@ -320,6 +324,7 @@ export const Route = createFileRoute("/api/chat")({
               model: "gpt-5",
               system,
               messages,
+              signal: request.signal,
             }),
           );
         }
@@ -335,6 +340,7 @@ export const Route = createFileRoute("/api/chat")({
               model: "grok-4-latest",
               system,
               messages,
+              signal: request.signal,
             }),
           );
         }
