@@ -15,14 +15,27 @@ interface Body {
   content: string;
   title?: string;
   author?: string;
+  trimSize?: string; // e.g. "6x9", "5x8", "8.5x11"
 }
 
-// KDP 6x9 book layout in DXA (1440 = 1in)
-const PAGE = {
-  width: 8640, // 6"
-  height: 12960, // 9"
-  margin: { top: 1440, bottom: 1440, left: 1080, right: 720 }, // 1", 1", 0.75" gutter, 0.5" outside
+// KDP trim sizes in DXA (1440 = 1in). Margins tuned per KDP recommendations:
+// gutter (inside) grows with page count; we use safe defaults for typical books.
+const IN = (n: number) => Math.round(n * 1440);
+const TRIM_SIZES: Record<string, { w: number; h: number; margin: { top: number; bottom: number; left: number; right: number }; label: string }> = {
+  "5x8":     { w: IN(5),    h: IN(8),     margin: { top: IN(0.75), bottom: IN(0.75), left: IN(0.75), right: IN(0.5) },  label: "5 x 8" },
+  "5.25x8":  { w: IN(5.25), h: IN(8),     margin: { top: IN(0.75), bottom: IN(0.75), left: IN(0.75), right: IN(0.5) },  label: "5.25 x 8" },
+  "5.5x8.5": { w: IN(5.5),  h: IN(8.5),   margin: { top: IN(0.75), bottom: IN(0.75), left: IN(0.75), right: IN(0.5) },  label: "5.5 x 8.5" },
+  "6x9":     { w: IN(6),    h: IN(9),     margin: { top: IN(1),    bottom: IN(1),    left: IN(0.75), right: IN(0.5) },  label: "6 x 9" },
+  "6.14x9.21": { w: IN(6.14), h: IN(9.21), margin: { top: IN(1),   bottom: IN(1),    left: IN(0.75), right: IN(0.5) },  label: "6.14 x 9.21" },
+  "7x10":    { w: IN(7),    h: IN(10),    margin: { top: IN(1),    bottom: IN(1),    left: IN(0.75), right: IN(0.5) },  label: "7 x 10" },
+  "7.5x9.25":{ w: IN(7.5),  h: IN(9.25),  margin: { top: IN(1),    bottom: IN(1),    left: IN(0.75), right: IN(0.5) },  label: "7.5 x 9.25" },
+  "8x10":    { w: IN(8),    h: IN(10),    margin: { top: IN(1),    bottom: IN(1),    left: IN(0.75), right: IN(0.5) },  label: "8 x 10" },
+  "8.5x11":  { w: IN(8.5),  h: IN(11),    margin: { top: IN(1),    bottom: IN(1),    left: IN(1),    right: IN(1) },    label: "8.5 x 11 (US Letter)" },
+  "8.5x5.5": { w: IN(8.5),  h: IN(5.5),   margin: { top: IN(0.5),  bottom: IN(0.5),  left: IN(0.75), right: IN(0.5) },  label: "8.5 x 5.5 (Half Letter Landscape)" },
+  "a4":      { w: IN(8.27), h: IN(11.69), margin: { top: IN(1),    bottom: IN(1),    left: IN(1),    right: IN(1) },    label: "A4" },
+  "a5":      { w: IN(5.83), h: IN(8.27),  margin: { top: IN(0.75), bottom: IN(0.75), left: IN(0.75), right: IN(0.5) },  label: "A5" },
 };
+const DEFAULT_TRIM = "6x9";
 
 function makeRun(text: string, opts: { bold?: boolean; italic?: boolean } = {}) {
   return new TextRun({ text, font: "Garamond", size: 24, ...opts });
@@ -148,6 +161,9 @@ export const Route = createFileRoute("/api/generate-formatted-docx")({
         }
         const title = (body.title ?? "Untitled Document").toString();
         const author = (body.author ?? "").toString();
+        const trimKey = (body.trimSize ?? DEFAULT_TRIM).toString().toLowerCase();
+        const PAGE = TRIM_SIZES[trimKey] ?? TRIM_SIZES[DEFAULT_TRIM];
+        const isLandscape = PAGE.w > PAGE.h;
 
         const titleChildren: Paragraph[] = [
           new Paragraph({
@@ -230,7 +246,11 @@ export const Route = createFileRoute("/api/generate-formatted-docx")({
             {
               properties: {
                 page: {
-                  size: { width: PAGE.width, height: PAGE.height, orientation: PageOrientation.PORTRAIT },
+                  size: {
+                    width: isLandscape ? PAGE.h : PAGE.w,
+                    height: isLandscape ? PAGE.w : PAGE.h,
+                    orientation: isLandscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
+                  },
                   margin: PAGE.margin,
                 },
               },

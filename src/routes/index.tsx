@@ -151,6 +151,7 @@ function Index() {
   // wiped by a new user message. Image generations replace the image slot.
   const [artifactText, setArtifactText] = useState("");
   const [artifactImage, setArtifactImage] = useState<string | null>(null);
+  const [trimSize, setTrimSize] = useState<string>("6x9");
   const [session, setSession] = useState<{ email: string | null } | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -864,7 +865,7 @@ function Index() {
                         const resp = await fetch("/api/generate-formatted-docx", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ content: artifactText, title }),
+                          body: JSON.stringify({ content: artifactText, title, trimSize }),
                         });
                         if (!resp.ok) throw new Error(await resp.text());
                         const blob = await resp.blob();
@@ -886,6 +887,31 @@ function Index() {
                   >
                     {language === "es" ? "Descargar DOCX" : "Download DOCX"}
                   </button>
+                )}
+                {(artifactText || artifactImage) && (
+                  <select
+                    value={trimSize}
+                    onChange={(e) => setTrimSize(e.target.value)}
+                    className="rounded border border-sky-400/60 bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sky-100 hover:bg-sky-500/15 focus:outline-none"
+                    title={language === "es" ? "Tamaño de página" : "Page trim size"}
+                  >
+                    <optgroup label={language === "es" ? "KDP Libro" : "KDP Book"}>
+                      <option value="5x8">5 x 8</option>
+                      <option value="5.25x8">5.25 x 8</option>
+                      <option value="5.5x8.5">5.5 x 8.5</option>
+                      <option value="6x9">6 x 9</option>
+                      <option value="6.14x9.21">6.14 x 9.21</option>
+                      <option value="7x10">7 x 10</option>
+                      <option value="7.5x9.25">7.5 x 9.25</option>
+                      <option value="8x10">8 x 10</option>
+                    </optgroup>
+                    <optgroup label={language === "es" ? "Estándar" : "Standard"}>
+                      <option value="8.5x11">8.5 x 11 (Letter)</option>
+                      <option value="8.5x5.5">8.5 x 5.5 (Half Letter)</option>
+                      <option value="a4">A4</option>
+                      <option value="a5">A5</option>
+                    </optgroup>
+                  </select>
                 )}
                 {(artifactText || artifactImage) && (
                   <button
