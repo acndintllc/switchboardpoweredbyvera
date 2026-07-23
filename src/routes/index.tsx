@@ -863,7 +863,7 @@ function Index() {
             aria-label="Artifact Canvas"
             className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm shadow-[0_0_28px_rgba(56,189,248,0.15)]"
           >
-            <header className="flex shrink-0 items-center justify-between border-b border-sky-500/20 px-4 py-2">
+            <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-sky-500/20 px-4 py-2">
               <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 Artifact Canvas
               </p>
