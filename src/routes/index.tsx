@@ -167,6 +167,8 @@ function Index() {
   const [artifactText, setArtifactText] = useState("");
   const [artifactImage, setArtifactImage] = useState<string | null>(null);
   const [trimSize, setTrimSize] = useState<string>("6x9");
+  const [trimOpen, setTrimOpen] = useState(false);
+  const trimBoxRef = useRef<HTMLDivElement>(null);
   const [session, setSession] = useState<{ email: string | null } | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
