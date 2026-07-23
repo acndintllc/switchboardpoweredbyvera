@@ -355,6 +355,17 @@ function Index() {
         composed += `\n\n[Attached image: ${a.name}]`;
       }
     }
+    // Context-aware pipeline injection: if the Artifact Canvas already holds
+    // a live document, ship it to the model as background context so the
+    // agent can edit, translate, or generate imagery from what is on screen.
+    const canvasContext = artifactText.trim();
+    if (canvasContext) {
+      const header =
+        language === "es"
+          ? "[Documento actual en el Lienzo de Artefacto — usa esto como contexto base. Edita, traduce o amplía según se indique.]"
+          : "[Current Artifact Canvas document — use this as base context. Edit, translate, or expand as instructed.]";
+      composed = `${header}\n\`\`\`\n${canvasContext}\n\`\`\`\n\n${composed}`;
+    }
     const firstImage = attachments.find((a) => a.kind === "image");
     const nextMessages: ChatMsg[] = [
       ...messages,
@@ -439,12 +450,17 @@ function Index() {
               }
               return copy;
             });
-            // Mirror stream into the persistent Artifact Canvas.
-            setArtifactText((prev) => {
-              const sep = firstChunkOfTurn && prev ? "\n\n---\n\n" : "";
-              return prev + sep + chunk;
-            });
-            firstChunkOfTurn = false;
+            // Mirror stream into the persistent Artifact Canvas. On the first
+            // chunk of a fresh turn, replace the canvas with the new revision
+            // (the prior content was already injected as prompt context above).
+            // Subsequent chunks within the same turn (including [PART_PAUSE]
+            // continuations) append seamlessly.
+            if (firstChunkOfTurn) {
+              setArtifactText(chunk);
+              firstChunkOfTurn = false;
+            } else {
+              setArtifactText((prev) => prev + chunk);
+            }
           }
           if (stoppedRef.current) break;
           // Strip a trailing [PART_PAUSE] token from the artifact between parts.
