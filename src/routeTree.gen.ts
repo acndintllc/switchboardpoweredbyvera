@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiGenerateFormattedDocxRouteImport } from './routes/api/generate-formatted-docx'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -29,6 +30,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGenerateFormattedDocxRoute =
+  ApiGenerateFormattedDocxRouteImport.update({
+    id: '/api/generate-formatted-docx',
+    path: '/api/generate-formatted-docx',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -40,12 +47,14 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/generate-formatted-docx': typeof ApiGenerateFormattedDocxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/generate-formatted-docx': typeof ApiGenerateFormattedDocxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +62,30 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/generate-formatted-docx': typeof ApiGenerateFormattedDocxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/reset-password' | '/sitemap.xml' | '/api/chat'
+  fullPaths:
+    | '/'
+    | '/reset-password'
+    | '/sitemap.xml'
+    | '/api/chat'
+    | '/api/generate-formatted-docx'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/reset-password' | '/sitemap.xml' | '/api/chat'
-  id: '__root__' | '/' | '/reset-password' | '/sitemap.xml' | '/api/chat'
+  to:
+    | '/'
+    | '/reset-password'
+    | '/sitemap.xml'
+    | '/api/chat'
+    | '/api/generate-formatted-docx'
+  id:
+    | '__root__'
+    | '/'
+    | '/reset-password'
+    | '/sitemap.xml'
+    | '/api/chat'
+    | '/api/generate-formatted-docx'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +93,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiGenerateFormattedDocxRoute: typeof ApiGenerateFormattedDocxRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generate-formatted-docx': {
+      id: '/api/generate-formatted-docx'
+      path: '/api/generate-formatted-docx'
+      fullPath: '/api/generate-formatted-docx'
+      preLoaderRoute: typeof ApiGenerateFormattedDocxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -107,6 +141,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiGenerateFormattedDocxRoute: ApiGenerateFormattedDocxRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

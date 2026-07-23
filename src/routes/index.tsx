@@ -855,6 +855,41 @@ function Index() {
                 {(artifactText || artifactImage) && (
                   <button
                     type="button"
+                    onClick={async () => {
+                      if (!artifactText.trim()) return;
+                      try {
+                        const firstLine =
+                          artifactText.split("\n").map((l) => l.trim()).find(Boolean) ?? "Document";
+                        const title = firstLine.replace(/^\*+|\*+$/g, "").slice(0, 80);
+                        const resp = await fetch("/api/generate-formatted-docx", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ content: artifactText, title }),
+                        });
+                        if (!resp.ok) throw new Error(await resp.text());
+                        const blob = await resp.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${title.replace(/[^a-z0-9]+/gi, "_") || "document"}.docx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch (e) {
+                        console.error("DOCX download failed", e);
+                        alert(language === "es" ? "Error al generar el documento." : "Failed to generate document.");
+                      }
+                    }}
+                    disabled={!artifactText.trim()}
+                    className="rounded border border-sky-400/60 bg-sky-500/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sky-100 hover:bg-sky-500/25 disabled:opacity-40"
+                  >
+                    {language === "es" ? "Descargar DOCX" : "Download DOCX"}
+                  </button>
+                )}
+                {(artifactText || artifactImage) && (
+                  <button
+                    type="button"
                     onClick={() => {
                       setArtifactText("");
                       setArtifactImage(null);
