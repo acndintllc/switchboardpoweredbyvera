@@ -80,6 +80,21 @@ const BRAINS: { value: Brain; label: string }[] = [
   { value: "image", label: "Image Generation" },
 ];
 
+const TRIM_SIZES: { value: string; label: string; labelEs: string }[] = [
+  { value: "5x8", label: "5 x 8", labelEs: "5 x 8" },
+  { value: "5.25x8", label: "5.25 x 8", labelEs: "5.25 x 8" },
+  { value: "5.5x8.5", label: "5.5 x 8.5", labelEs: "5.5 x 8.5" },
+  { value: "6x9", label: "6 x 9", labelEs: "6 x 9" },
+  { value: "6.14x9.21", label: "6.14 x 9.21", labelEs: "6.14 x 9.21" },
+  { value: "7x10", label: "7 x 10", labelEs: "7 x 10" },
+  { value: "7.5x9.25", label: "7.5 x 9.25", labelEs: "7.5 x 9.25" },
+  { value: "8x10", label: "8 x 10", labelEs: "8 x 10" },
+  { value: "8.5x11", label: "8.5 x 11 Letter", labelEs: "8.5 x 11 Carta" },
+  { value: "8.5x5.5", label: "8.5 x 5.5 Half Letter", labelEs: "8.5 x 5.5 Media Carta" },
+  { value: "a4", label: "A4", labelEs: "A4" },
+  { value: "a5", label: "A5", labelEs: "A5" },
+];
+
 interface Persona {
   slug: string;
   name: string;
@@ -152,6 +167,8 @@ function Index() {
   const [artifactText, setArtifactText] = useState("");
   const [artifactImage, setArtifactImage] = useState<string | null>(null);
   const [trimSize, setTrimSize] = useState<string>("6x9");
+  const [trimOpen, setTrimOpen] = useState(false);
+  const trimBoxRef = useRef<HTMLDivElement>(null);
   const [session, setSession] = useState<{ email: string | null } | null>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -170,6 +187,7 @@ function Index() {
   useEffect(() => {
     function onClick(e: MouseEvent) {
       if (!personaBoxRef.current?.contains(e.target as Node)) setPersonaOpen(false);
+      if (!trimBoxRef.current?.contains(e.target as Node)) setTrimOpen(false);
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
@@ -845,7 +863,7 @@ function Index() {
             aria-label="Artifact Canvas"
             className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm shadow-[0_0_28px_rgba(56,189,248,0.15)]"
           >
-            <header className="flex shrink-0 items-center justify-between border-b border-sky-500/20 px-4 py-2">
+            <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-sky-500/20 px-4 py-2">
               <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 Artifact Canvas
               </p>
@@ -889,29 +907,68 @@ function Index() {
                   </button>
                 )}
                 {(artifactText || artifactImage) && (
-                  <select
-                    value={trimSize}
-                    onChange={(e) => setTrimSize(e.target.value)}
-                    className="rounded border border-sky-400/60 bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sky-100 hover:bg-sky-500/15 focus:outline-none"
-                    title={language === "es" ? "Tamaño de página" : "Page trim size"}
-                  >
-                    <optgroup label={language === "es" ? "KDP Libro" : "KDP Book"}>
-                      <option value="5x8">5 x 8</option>
-                      <option value="5.25x8">5.25 x 8</option>
-                      <option value="5.5x8.5">5.5 x 8.5</option>
-                      <option value="6x9">6 x 9</option>
-                      <option value="6.14x9.21">6.14 x 9.21</option>
-                      <option value="7x10">7 x 10</option>
-                      <option value="7.5x9.25">7.5 x 9.25</option>
-                      <option value="8x10">8 x 10</option>
-                    </optgroup>
-                    <optgroup label={language === "es" ? "Estándar" : "Standard"}>
-                      <option value="8.5x11">8.5 x 11 (Letter)</option>
-                      <option value="8.5x5.5">8.5 x 5.5 (Half Letter)</option>
-                      <option value="a4">A4</option>
-                      <option value="a5">A5</option>
-                    </optgroup>
-                  </select>
+                  <div className="relative" ref={trimBoxRef}>
+                    <button
+                      type="button"
+                      aria-label={language === "es" ? "Tamaño de página" : "Page trim size"}
+                      onClick={() => setTrimOpen((v) => !v)}
+                      className="flex h-12 w-full flex-col items-start justify-center rounded-md border border-sky-500/60 bg-sky-950/60 px-3 py-1 text-left text-sky-100 shadow-[0_0_18px_rgba(56,189,248,0.25)] outline-none focus:ring-2 focus:ring-sky-400 sm:h-14 sm:min-w-[180px]"
+                    >
+                      <span className="px-1 text-[10px] uppercase tracking-wider text-sky-200/70 leading-tight">
+                        {language === "es" ? "Tamaño de página" : "Trim Size"}
+                      </span>
+                      <span className="font-display text-sm font-semibold tracking-wide uppercase leading-tight text-sky-100">
+                        {TRIM_SIZES.find((t) => t.value === trimSize)?.[language === "es" ? "labelEs" : "label"] ?? trimSize}
+                      </span>
+                    </button>
+                    {trimOpen && (
+                      <ul
+                        role="listbox"
+                        className="absolute right-0 top-full z-30 mt-1 max-h-80 w-[260px] overflow-y-auto rounded-md border border-sky-500/50 bg-sky-950/95 text-sky-100 shadow-[0_0_24px_rgba(56,189,248,0.35)] backdrop-blur"
+                      >
+                        <li className="sticky top-0 z-10 border-b border-sky-500/30 bg-sky-900/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-300 backdrop-blur">
+                          {language === "es" ? "Tamaños KDP" : "KDP Sizes"}
+                        </li>
+                        {TRIM_SIZES.slice(0, 8).map((t) => {
+                          const selected = t.value === trimSize;
+                          return (
+                            <li key={t.value}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTrimSize(t.value);
+                                  setTrimOpen(false);
+                                }}
+                                className={`flex w-full px-3 py-2 text-left text-sm font-semibold tracking-wide uppercase text-sky-100 transition-colors hover:bg-sky-800/50 ${selected ? "bg-sky-800/60" : ""}`}
+                              >
+                                {language === "es" ? t.labelEs : t.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                        <li className="sticky top-0 z-10 border-b border-sky-500/30 bg-sky-900/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-sky-300 backdrop-blur">
+                          {language === "es" ? "Estándar" : "Standard"}
+                        </li>
+                        {TRIM_SIZES.slice(8).map((t) => {
+                          const selected = t.value === trimSize;
+                          return (
+                            <li key={t.value}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTrimSize(t.value);
+                                  setTrimOpen(false);
+                                }}
+                                className={`flex w-full px-3 py-2 text-left text-sm font-semibold tracking-wide uppercase text-sky-100 transition-colors hover:bg-sky-800/50 ${selected ? "bg-sky-800/60" : ""}`}
+                              >
+                                {language === "es" ? t.labelEs : t.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
                 )}
                 {(artifactText || artifactImage) && (
                   <button
