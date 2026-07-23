@@ -906,8 +906,7 @@ function Index() {
                     {language === "es" ? "Descargar DOCX" : "Download DOCX"}
                   </button>
                 )}
-                {(artifactText || artifactImage) && (
-                  <div className="relative" ref={trimBoxRef}>
+                <div className="relative" ref={trimBoxRef}>
                     <button
                       type="button"
                       aria-label={language === "es" ? "Tamaño de página" : "Page trim size"}
@@ -968,8 +967,7 @@ function Index() {
                         })}
                       </ul>
                     )}
-                  </div>
-                )}
+                </div>
                 {(artifactText || artifactImage) && (
                   <button
                     type="button"
