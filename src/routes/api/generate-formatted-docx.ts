@@ -161,6 +161,9 @@ export const Route = createFileRoute("/api/generate-formatted-docx")({
         }
         const title = (body.title ?? "Untitled Document").toString();
         const author = (body.author ?? "").toString();
+        const trimKey = (body.trimSize ?? DEFAULT_TRIM).toString().toLowerCase();
+        const PAGE = TRIM_SIZES[trimKey] ?? TRIM_SIZES[DEFAULT_TRIM];
+        const isLandscape = PAGE.w > PAGE.h;
 
         const titleChildren: Paragraph[] = [
           new Paragraph({
@@ -243,7 +246,11 @@ export const Route = createFileRoute("/api/generate-formatted-docx")({
             {
               properties: {
                 page: {
-                  size: { width: PAGE.width, height: PAGE.height, orientation: PageOrientation.PORTRAIT },
+                  size: {
+                    width: isLandscape ? PAGE.h : PAGE.w,
+                    height: isLandscape ? PAGE.w : PAGE.h,
+                    orientation: isLandscape ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
+                  },
                   margin: PAGE.margin,
                 },
               },
