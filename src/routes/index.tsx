@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/switchboard-vera.png.asset.json";
-import headerLogoAsset from "@/assets/switchboard-header.png.asset.json";
+import headerLogoAsset from "@/assets/switchboard-logo-wide.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -516,13 +516,13 @@ function Index() {
     <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
       {/* Top Control Bar */}
       <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center justify-between gap-2">
             <h1 className="m-0 leading-none">
               <img
                 src={headerLogoAsset.url}
                 alt={`Switchboard, ${t.poweredBy}`}
-                className="h-10 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)] sm:h-14"
+                className="h-12 w-auto object-contain brightness-125 drop-shadow-[0_0_10px_rgba(56,189,248,0.45)] sm:h-16"
               />
               <span className="sr-only">Switchboard, {t.poweredBy}</span>
             </h1>
