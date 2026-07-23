@@ -368,6 +368,7 @@ function Index() {
         });
         const j = await resp.json();
         if (!resp.ok) throw new Error(j?.error ?? `Error ${resp.status}`);
+        if (j.imageUrl) setArtifactImage(j.imageUrl);
         setMessages((m) => [
           ...m,
           { role: "assistant", content: j.imageUrl ? "" : "(no image returned)", imageUrl: j.imageUrl ?? undefined },
@@ -377,6 +378,7 @@ function Index() {
         setMessages((m) => [...m, { role: "assistant", content: "" }]);
         let convo = nextMessages.slice();
         let aggregate = "";
+        let firstChunkOfTurn = true;
         const MAX_PARTS = 8;
         for (let part = 0; part < MAX_PARTS; part++) {
           const resp = await fetch("/api/chat", {
@@ -408,6 +410,16 @@ function Index() {
               }
               return copy;
             });
+            // Mirror stream into the persistent Artifact Canvas.
+            setArtifactText((prev) => {
+              const sep = firstChunkOfTurn && prev ? "\n\n---\n\n" : "";
+              return prev + sep + chunk;
+            });
+            firstChunkOfTurn = false;
+          }
+          // Strip a trailing [PART_PAUSE] token from the artifact between parts.
+          if (/\[PART_PAUSE\]\s*$/i.test(partText.trim())) {
+            setArtifactText((prev) => prev.replace(/\[PART_PAUSE\]\s*$/i, ""));
           }
           if (!/\[PART_PAUSE\]\s*$/i.test(partText.trim())) break;
           // Strip token from aggregate and prepare a silent continuation turn.
