@@ -144,6 +144,8 @@ function Index() {
   const [personaOpen, setPersonaOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
   // Artifact Canvas is a persistent document editor. It accumulates text
   // across sends, pair switches, and [PART_PAUSE] continuations — never
   // wiped by a new user message. Image generations replace the image slot.
@@ -328,7 +330,8 @@ function Index() {
     let composed = text;
     for (const a of attachments) {
       if (a.kind === "text" && a.text) {
-        composed += `\n\n[Attached file: ${a.name}]\n\`\`\`\n${a.text.slice(0, 20000)}\n\`\`\``;
+        // No size cap: send the entire document (e.g. full book manuscript).
+        composed += `\n\n[Attached file: ${a.name}]\n\`\`\`\n${a.text}\n\`\`\``;
       } else if (a.kind === "image") {
         composed += `\n\n[Attached image: ${a.name}]`;
       }
@@ -341,6 +344,9 @@ function Index() {
     setMessages(nextMessages);
     setAttachments([]);
     setBusy(true);
+    stoppedRef.current = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -361,6 +367,7 @@ function Index() {
         const resp = await fetch("/api/chat", {
           method: "POST",
           headers: authHeaders,
+          signal: controller.signal,
           body: JSON.stringify({
             brain, personaSlug, language,
             messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
@@ -381,9 +388,11 @@ function Index() {
         let firstChunkOfTurn = true;
         const MAX_PARTS = 8;
         for (let part = 0; part < MAX_PARTS; part++) {
+          if (stoppedRef.current) break;
           const resp = await fetch("/api/chat", {
             method: "POST",
             headers: authHeaders,
+            signal: controller.signal,
             body: JSON.stringify({
               brain, personaSlug, language,
               messages: convo.map((m) => ({ role: m.role, content: m.content })),
@@ -399,6 +408,7 @@ function Index() {
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
+            if (stoppedRef.current) { try { await reader.cancel(); } catch { /* ignore */ } break; }
             const chunk = dec.decode(value, { stream: true });
             partText += chunk;
             aggregate += chunk;
@@ -417,6 +427,7 @@ function Index() {
             });
             firstChunkOfTurn = false;
           }
+          if (stoppedRef.current) break;
           // Strip a trailing [PART_PAUSE] token from the artifact between parts.
           if (/\[PART_PAUSE\]\s*$/i.test(partText.trim())) {
             setArtifactText((prev) => prev.replace(/\[PART_PAUSE\]\s*$/i, ""));
@@ -434,10 +445,21 @@ function Index() {
         }
       }
     } catch (e) {
-      setError((e as Error).message);
+      const err = e as Error;
+      if (err.name === "AbortError" || stoppedRef.current) {
+        // User-initiated stop: silent, keep partial output.
+      } else {
+        setError(err.message);
+      }
     } finally {
       setBusy(false);
+      abortRef.current = null;
     }
+  }
+
+  function handleStop() {
+    stoppedRef.current = true;
+    abortRef.current?.abort();
   }
 
   async function handleFiles(files: FileList | null) {
@@ -801,6 +823,16 @@ function Index() {
                     >
                       {busy ? "…" : t.send}
                     </button>
+                    {busy && (
+                      <button
+                        type="button"
+                        onClick={handleStop}
+                        className="rounded-md border border-red-500/60 bg-red-950/60 px-3 py-2 text-sm font-semibold text-red-200 shadow-[0_0_14px_rgba(239,68,68,0.35)] hover:bg-red-900/70 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        title={language === "es" ? "Detener respuesta" : "Stop response"}
+                      >
+                        ■ {language === "es" ? "Detener" : "Stop"}
+                      </button>
+                    )}
                   </>
                 )}
               </form>
