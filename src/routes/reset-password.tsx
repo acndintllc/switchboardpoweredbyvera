@@ -43,9 +43,15 @@ function ResetPassword() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-lg border border-sky-500/40 bg-sky-950/60 p-6 shadow-[0_0_28px_rgba(56,189,248,0.25)]"
+      className="w-full max-w-sm rounded-lg border border-sky-500/40 bg-sky-950/60 p-6 shadow-[0_0_28px_rgba(56,189,248,0.25)]"
       >
+        <img
+          src={headerLogoAsset.url}
+          alt="Switchboard Powered by VERA"
+          className="mx-auto mb-5 h-20 w-auto sm:h-24"
+        />
         <h1 className="font-display mb-4 text-lg font-semibold uppercase tracking-[0.2em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.7)]">
+
           Set new password
         </h1>
         <div className="relative">
