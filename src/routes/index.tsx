@@ -1023,12 +1023,29 @@ function Index() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!confirmClearOutput) {
+                        setConfirmClearOutput(true);
+                        setTimeout(() => setConfirmClearOutput(false), 3000);
+                        return;
+                      }
                       setArtifactText("");
                       setArtifactImage(null);
+                      try {
+                        window.localStorage.removeItem("switchboard_ai_history");
+                        window.localStorage.removeItem("switchboard_ai_image");
+                      } catch { /* ignore */ }
+                      setConfirmClearOutput(false);
                     }}
-                    className="rounded border border-sky-500/40 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sky-200/80 hover:bg-sky-900/60"
+                    className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      confirmClearOutput
+                        ? "border-red-400/70 bg-red-500/20 text-red-100 hover:bg-red-500/30"
+                        : "border-sky-500/40 text-sky-200/80 hover:bg-sky-900/60"
+                    }`}
+                    title={language === "es" ? "Doble clic para confirmar" : "Click twice to confirm"}
                   >
-                    {language === "es" ? "Limpiar" : "Clear"}
+                    {confirmClearOutput
+                      ? (language === "es" ? "Confirmar" : "Confirm")
+                      : (language === "es" ? "Limpiar salida" : "Clear Output")}
                   </button>
                 )}
               </div>
