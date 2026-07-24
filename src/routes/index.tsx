@@ -149,10 +149,17 @@ function Index() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [brain, setBrain] = useState<Brain>("claude");
   const [personaSlug, setPersonaSlug] = useState<string>("");
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  // Per-pair conversation memory. Key = `${brain}::${personaSlug}`.
-  const conversationsRef = useRef<Record<string, ChatMsg[]>>({});
-  const currentKeyRef = useRef<string>("");
+  // Global chat history — bound to localStorage. Dropdown changes NEVER
+  // clear this. Only the explicit "Clear Chat" button wipes it.
+  const [messages, setMessages] = useState<ChatMsg[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("switchboard_user_history");
+      return raw ? (JSON.parse(raw) as ChatMsg[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,11 +168,18 @@ function Index() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
-  // Artifact Canvas is a persistent document editor. It accumulates text
-  // across sends, pair switches, and [PART_PAUSE] continuations — never
-  // wiped by a new user message. Image generations replace the image slot.
-  const [artifactText, setArtifactText] = useState("");
-  const [artifactImage, setArtifactImage] = useState<string | null>(null);
+  // Artifact Canvas — bound to localStorage. Persists across sends, pair
+  // switches, language toggles, and full reloads. Only "Clear Output" wipes.
+  const [artifactText, setArtifactText] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try { return window.localStorage.getItem("switchboard_ai_history") ?? ""; } catch { return ""; }
+  });
+  const [artifactImage, setArtifactImage] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem("switchboard_ai_image") || null; } catch { return null; }
+  });
+  const [confirmClearChat, setConfirmClearChat] = useState(false);
+  const [confirmClearOutput, setConfirmClearOutput] = useState(false);
   const [trimSize, setTrimSize] = useState<string>("6x9");
   const [trimOpen, setTrimOpen] = useState(false);
   const trimBoxRef = useRef<HTMLDivElement>(null);
@@ -289,24 +303,20 @@ function Index() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Persist and restore conversation history per (brain, persona) pair so
-  // switching dropdowns preserves each thread independently.
+  // Realtime localStorage persistence — survives dropdown switches, language
+  // toggles, reloads, and glitches. Dropdowns do NOT touch these states.
   useEffect(() => {
-    if (!personaSlug) return;
-    const nextKey = `${brain}::${personaSlug}`;
-    const prevKey = currentKeyRef.current;
-    if (prevKey === nextKey) return;
-    if (prevKey) conversationsRef.current[prevKey] = messages;
-    currentKeyRef.current = nextKey;
-    setMessages(conversationsRef.current[nextKey] ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brain, personaSlug]);
-
-  // Keep the live map in sync as messages update for the current pair.
-  useEffect(() => {
-    const key = currentKeyRef.current;
-    if (key) conversationsRef.current[key] = messages;
+    try { window.localStorage.setItem("switchboard_user_history", JSON.stringify(messages)); } catch { /* quota */ }
   }, [messages]);
+  useEffect(() => {
+    try { window.localStorage.setItem("switchboard_ai_history", artifactText); } catch { /* quota */ }
+  }, [artifactText]);
+  useEffect(() => {
+    try {
+      if (artifactImage) window.localStorage.setItem("switchboard_ai_image", artifactImage);
+      else window.localStorage.removeItem("switchboard_ai_image");
+    } catch { /* quota */ }
+  }, [artifactImage]);
 
   useEffect(() => {
     artifactRef.current?.scrollTo({ top: artifactRef.current.scrollHeight, behavior: "smooth" });
