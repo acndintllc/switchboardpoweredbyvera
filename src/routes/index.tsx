@@ -690,10 +690,35 @@ function Index() {
             aria-label="Interaction Feed"
             className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm"
           >
-            <header className="shrink-0 border-b border-sky-500/20 px-3 py-2">
+            <header className="flex shrink-0 items-center justify-between gap-2 border-b border-sky-500/20 px-3 py-2">
               <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 Interaction Feed
               </p>
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!confirmClearChat) {
+                      setConfirmClearChat(true);
+                      setTimeout(() => setConfirmClearChat(false), 3000);
+                      return;
+                    }
+                    setMessages([]);
+                    try { window.localStorage.removeItem("switchboard_user_history"); } catch { /* ignore */ }
+                    setConfirmClearChat(false);
+                  }}
+                  className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors ${
+                    confirmClearChat
+                      ? "border-red-400/70 bg-red-500/20 text-red-100 hover:bg-red-500/30"
+                      : "border-sky-500/40 text-sky-200/80 hover:bg-sky-900/60"
+                  }`}
+                  title={language === "es" ? "Doble clic para confirmar" : "Click twice to confirm"}
+                >
+                  {confirmClearChat
+                    ? (language === "es" ? "Confirmar" : "Confirm")
+                    : (language === "es" ? "Limpiar chat" : "Clear Chat")}
+                </button>
+              )}
             </header>
             {/* Scrollable messages — grows and scrolls independently */}
             <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4">
