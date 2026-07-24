@@ -149,10 +149,17 @@ function Index() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [brain, setBrain] = useState<Brain>("claude");
   const [personaSlug, setPersonaSlug] = useState<string>("");
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
-  // Per-pair conversation memory. Key = `${brain}::${personaSlug}`.
-  const conversationsRef = useRef<Record<string, ChatMsg[]>>({});
-  const currentKeyRef = useRef<string>("");
+  // Global chat history — bound to localStorage. Dropdown changes NEVER
+  // clear this. Only the explicit "Clear Chat" button wipes it.
+  const [messages, setMessages] = useState<ChatMsg[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("switchboard_user_history");
+      return raw ? (JSON.parse(raw) as ChatMsg[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,11 +168,18 @@ function Index() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
-  // Artifact Canvas is a persistent document editor. It accumulates text
-  // across sends, pair switches, and [PART_PAUSE] continuations — never
-  // wiped by a new user message. Image generations replace the image slot.
-  const [artifactText, setArtifactText] = useState("");
-  const [artifactImage, setArtifactImage] = useState<string | null>(null);
+  // Artifact Canvas — bound to localStorage. Persists across sends, pair
+  // switches, language toggles, and full reloads. Only "Clear Output" wipes.
+  const [artifactText, setArtifactText] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    try { return window.localStorage.getItem("switchboard_ai_history") ?? ""; } catch { return ""; }
+  });
+  const [artifactImage, setArtifactImage] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem("switchboard_ai_image") || null; } catch { return null; }
+  });
+  const [confirmClearChat, setConfirmClearChat] = useState(false);
+  const [confirmClearOutput, setConfirmClearOutput] = useState(false);
   const [trimSize, setTrimSize] = useState<string>("6x9");
   const [trimOpen, setTrimOpen] = useState(false);
   const trimBoxRef = useRef<HTMLDivElement>(null);
@@ -289,24 +303,20 @@ function Index() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Persist and restore conversation history per (brain, persona) pair so
-  // switching dropdowns preserves each thread independently.
+  // Realtime localStorage persistence — survives dropdown switches, language
+  // toggles, reloads, and glitches. Dropdowns do NOT touch these states.
   useEffect(() => {
-    if (!personaSlug) return;
-    const nextKey = `${brain}::${personaSlug}`;
-    const prevKey = currentKeyRef.current;
-    if (prevKey === nextKey) return;
-    if (prevKey) conversationsRef.current[prevKey] = messages;
-    currentKeyRef.current = nextKey;
-    setMessages(conversationsRef.current[nextKey] ?? []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [brain, personaSlug]);
-
-  // Keep the live map in sync as messages update for the current pair.
-  useEffect(() => {
-    const key = currentKeyRef.current;
-    if (key) conversationsRef.current[key] = messages;
+    try { window.localStorage.setItem("switchboard_user_history", JSON.stringify(messages)); } catch { /* quota */ }
   }, [messages]);
+  useEffect(() => {
+    try { window.localStorage.setItem("switchboard_ai_history", artifactText); } catch { /* quota */ }
+  }, [artifactText]);
+  useEffect(() => {
+    try {
+      if (artifactImage) window.localStorage.setItem("switchboard_ai_image", artifactImage);
+      else window.localStorage.removeItem("switchboard_ai_image");
+    } catch { /* quota */ }
+  }, [artifactImage]);
 
   useEffect(() => {
     artifactRef.current?.scrollTo({ top: artifactRef.current.scrollHeight, behavior: "smooth" });
@@ -680,10 +690,35 @@ function Index() {
             aria-label="Interaction Feed"
             className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-sky-500/20 bg-black/40 backdrop-blur-sm"
           >
-            <header className="shrink-0 border-b border-sky-500/20 px-3 py-2">
+            <header className="flex shrink-0 items-center justify-between gap-2 border-b border-sky-500/20 px-3 py-2">
               <p className="font-display text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.6)]">
                 Interaction Feed
               </p>
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!confirmClearChat) {
+                      setConfirmClearChat(true);
+                      setTimeout(() => setConfirmClearChat(false), 3000);
+                      return;
+                    }
+                    setMessages([]);
+                    try { window.localStorage.removeItem("switchboard_user_history"); } catch { /* ignore */ }
+                    setConfirmClearChat(false);
+                  }}
+                  className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors ${
+                    confirmClearChat
+                      ? "border-red-400/70 bg-red-500/20 text-red-100 hover:bg-red-500/30"
+                      : "border-sky-500/40 text-sky-200/80 hover:bg-sky-900/60"
+                  }`}
+                  title={language === "es" ? "Doble clic para confirmar" : "Click twice to confirm"}
+                >
+                  {confirmClearChat
+                    ? (language === "es" ? "Confirmar" : "Confirm")
+                    : (language === "es" ? "Limpiar chat" : "Clear Chat")}
+                </button>
+              )}
             </header>
             {/* Scrollable messages — grows and scrolls independently */}
             <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4">
@@ -988,12 +1023,29 @@ function Index() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (!confirmClearOutput) {
+                        setConfirmClearOutput(true);
+                        setTimeout(() => setConfirmClearOutput(false), 3000);
+                        return;
+                      }
                       setArtifactText("");
                       setArtifactImage(null);
+                      try {
+                        window.localStorage.removeItem("switchboard_ai_history");
+                        window.localStorage.removeItem("switchboard_ai_image");
+                      } catch { /* ignore */ }
+                      setConfirmClearOutput(false);
                     }}
-                    className="rounded border border-sky-500/40 px-2 py-0.5 text-[10px] uppercase tracking-wider text-sky-200/80 hover:bg-sky-900/60"
+                    className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors ${
+                      confirmClearOutput
+                        ? "border-red-400/70 bg-red-500/20 text-red-100 hover:bg-red-500/30"
+                        : "border-sky-500/40 text-sky-200/80 hover:bg-sky-900/60"
+                    }`}
+                    title={language === "es" ? "Doble clic para confirmar" : "Click twice to confirm"}
                   >
-                    {language === "es" ? "Limpiar" : "Clear"}
+                    {confirmClearOutput
+                      ? (language === "es" ? "Confirmar" : "Confirm")
+                      : (language === "es" ? "Limpiar salida" : "Clear Output")}
                   </button>
                 )}
               </div>
