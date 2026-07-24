@@ -245,13 +245,14 @@ async function generateImage(opts: {
   system: string;
   userPrompt: string;
 }): Promise<Response> {
-  // gpt-image-1 has no internal prompt expansion, so act as the polisher:
-  // inject a high-contrast visual descriptor prefix, fold in the compiled
-  // persona constraints, then append the user's raw prompt text.
-  const polisherPrefix =
-    "A professional, high-fidelity graphic asset, masterfully rendered with razor-sharp focus, dynamic atmospheric lighting, and clean geometric structures. Intended for commercial publishing. Style: ";
-  const combined =
-    `${polisherPrefix}${opts.system}. Prompt Detail: ${opts.userPrompt}`.slice(0, 3900);
+  // DALL-E 3 already does strong internal prompt expansion. Lead with the
+  // user's actual request so the subject drives the image, and only append
+  // a light persona style hint. No "book cover / commercial publishing"
+  // language — that was forcing every render into a cover layout.
+  const styleHint = opts.system
+    .replace(/\s+/g, " ")
+    .slice(0, 400);
+  const combined = `${opts.userPrompt}\n\nStyle direction (persona): ${styleHint}`.slice(0, 3900);
   const resp = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -259,11 +260,13 @@ async function generateImage(opts: {
       Authorization: `Bearer ${opts.apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-image-1",
+      model: "dall-e-3",
       prompt: combined,
       n: 1,
-      size: "1024x1536",
-      quality: "high",
+      size: "1024x1024",
+      quality: "hd",
+      style: "vivid",
+      response_format: "b64_json",
     }),
   });
   const json = await resp.json().catch(() => ({}));
