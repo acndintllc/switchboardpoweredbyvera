@@ -1,42 +1,62 @@
-# Plan: Trim Writing Agents to a Single Service Persona
+# Plan: Retire the Writing Group, Convert the Filter to a Business Document Filter
 
 ## Goal
-You intended to remove about 6 of the 7 Writing assets from the persona roster, but all 7 are still in the database. After this change, **Publication Filter Unit** will be the only Writing asset left. The 9 Business assets stay untouched.
+Cut the roster down to business only. All 6 author and translation personas are deleted, and the Publication Filter Unit is converted into a **Business Document Filter** with an internal roster reduced from five roles to just Kim and Tasha.
 
-## Current state (verified)
-The `agent_personas` table has 7 Writing assets:
-1. Marcus — slug `marcus`
-2. Maya Okonkwo-Reyes — slug `maya`
-3. The Author Duo — Tasha & Becky — slug `author-duo`
-4. The Creative Trio — Kim, Fred & Pierre — slug `creative-trio`
-5. The Architect — slug `the_architect`
-6. The Publication Filter Unit — slug `filter-unit` (KEEP)
-7. Global Translation Agent — slug `global-translation` (DELETE)
+## Current state (verified in the database)
+Writing assets (7):
+1. Marcus — `marcus`
+2. Maya Okonkwo-Reyes — `maya`
+3. The Author Duo, Tasha & Becky — `author-duo`
+4. The Creative Trio, Kim, Fred & Pierre — `creative-trio`
+5. The Architect — `the_architect`
+6. The Publication Filter Unit — `filter-unit` (five role pipeline: Kim structure, Fred execution, Pierre disruption, Tasha narrative, Becky reader)
+7. Global Translation Agent — `global-translation`
 
-Business assets (9) are unchanged.
+Business assets (9): Master System Operator, Growth Research Analyst, Janet, Phillip, Ralph, Sam, Tom, Abe, Jill. These stay exactly as they are.
 
 ## What changes
 
-### 1. Delete 6 Writing asset rows (data only, no schema change)
-Use the `run_sql` tool (not a migration, since this is a data operation) to delete the 6 rows by slug:
+### 1. Delete the 6 writing personas
+Data operation, no schema change:
 
 ```sql
 DELETE FROM public.agent_personas
 WHERE slug IN ('marcus','maya','author-duo','creative-trio','the_architect','global-translation');
 ```
 
-This leaves Publication Filter Unit (`filter-unit`) as the sole Writing asset, plus all 9 Business assets. Total roster goes from 16 to 10 personas.
+### 2. Convert `filter-unit` into the Business Document Filter
+Update the same row in place so it keeps its slug and existing wiring:
 
-### 2. No frontend or schema changes required
-- The persona dropdown reads from the `agent_personas_public` view (`src/routes/index.tsx` line 283), which is a live view over the table. Deleted rows disappear from the menu automatically.
-- The `agent_personas_public` view, RLS policies, grants, and the `/api/chat` persona fetcher all remain valid. No code edits.
-- Category headers in the dropdown ("Writing assets" / "Business assets") still render from the data, so the "Writing assets" group will now contain just Publication Filter Unit.
+- `category` moves from "Writing assets" to "Business assets"
+- `agent_name` becomes "Business Document Filter"
+- `name` becomes "Business Document Filter"
+- `display_label` becomes "[Service] Business Document Filter, Document Review and Editing"
+- `display_label_es` becomes "[Servicio] Filtro de Documentos de Negocios, Revisión y edición de documentos"
+- `description` / `description_es` rewritten to "Two role business document pass, Kim (structure) and Tasha (narrative)"
+- `sort_order` set to place it at the end of the Business group
+
+### 3. Rewrite its 6 pillars for two roles, business scope
+Every pillar currently describes a five role manuscript pipeline aimed at publication ready book files. Each is rewritten so that:
+
+- Only **Kim (structure)** and **Tasha (narrative)** remain. Fred, Pierre, and Becky are removed from every pillar.
+- The subject matter shifts from manuscripts and book publishing to business documents: reports, proposals, memos, policies, decks, and client facing deliverables.
+- The Global Translation Reverse-Translation QC Pass stays embedded in the governance audit loop, consistent with the rest of the roster.
+- Both the `_en` and `_es` pillar columns are updated, plus the legacy base columns (`role`, `personality`, `constitution`, `boundaries`, `engagement`, `audit_loop`) so the server prompt compiler has no stale fallback text.
+
+### 4. No frontend or schema changes required
+- The dropdown reads from the `agent_personas_public` view, so deleted rows vanish and the converted row reappears under the Business group automatically.
+- The "Writing assets" group header simply renders nothing once no rows carry that category. The existing Spanish label mapping in `src/routes/index.tsx` is left in place and harmless.
+- RLS, grants, the public view, and the `/api/chat` pillar fetcher all stay valid.
+
+## Result
+10 personas total, all under Business assets: the 9 existing business agents plus the Business Document Filter.
 
 ## Verification
-After the delete runs:
-- Re-query `SELECT slug, name, category FROM agent_personas ORDER BY category, sort_order;` and confirm 10 rows remain (1 Writing + 9 Business).
-- Confirm the dropdown in the preview shows Publication Filter Unit under Writing assets and no other writing personas.
+- Re-query the table and confirm 10 rows, all `category = 'Business assets'`.
+- Confirm the filter row shows the new name, labels, and two role pillar text with no mention of Fred, Pierre, or Becky.
+- Open the preview and confirm the persona dropdown shows one group with 10 entries.
 
 ## Notes
-- This is a hard delete, not a hide. The 6 personas and their 6-pillar instruction data are gone for good. If you want any back later, they must be re-inserted with full pillar text.
-- Per the project rule, no `*` or `-` characters are used as em dashes in any text this change touches.
+- The 6 deletions are permanent. Their 6-pillar instruction text is not recoverable without re-seeding it.
+- No `*` or `-` characters are used as em dashes in any new text.
